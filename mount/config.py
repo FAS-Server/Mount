@@ -1,13 +1,12 @@
-from typing import List
+from typing import List, Dict
 
 from mcdreforged.api.utils import Serializable
 
 
 class MountConfig(Serializable):
+    servers_path: str = "../MountableServers"
 
-    servers_path: List[str] = ["../MountableServers"]
-
-    # whether to walk through servers_path when reload, which will edit the available_servers below
+    # whether to walk through servers_path when reloaded, which will edit the available_servers below
     auto_detect: bool = False
 
     # whether to overwrite the mc server properties
@@ -18,20 +17,23 @@ class MountConfig(Serializable):
     available_servers: List[str] = ["Parkour", "PVP", "Bingo"]
 
     current_server: str = "Parkour"
-    start_command: str = "./start.cmd"
     mount_name: str = "MountDemo"
+    command_permission: Dict[str, int] = {
+        "mount_server"
+    }
+    DEBUG = False
 
 
 class MountableMCServerConfig(Serializable):
     # relative to servers_path
-    path: str = "Demo"
     desc: str = "Demo server"
+    start_command: str = "./start.sh"
+    handler = "vanilla_handler"
 
     # where this server is occupied by another mcdr instance
     occupied: str = ""
     # backup path for reset, empty for disable, should be relative to mc server path
-    reset_path: str = "reset_slot"
+    reset_path: str = "reset_path"
 
     # mcdr plugin path for specific plugin, empty for disable, should be relative to mc server path
     spec_plugin_dir: str = "mcdr_plg"
-
