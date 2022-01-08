@@ -3,14 +3,16 @@ from threading import Lock
 
 from jproperties import Properties
 from .config import MountableMCServerConfig as Config
-from .constants import MOUNTABLE_CONFIG
-from mcdreforged.api.types import PluginServerInterface as PSI
+from .constants import MOUNTABLE_CONFIG, COMMAND_PREFIX
+from mcdreforged.api.rtext import RTextList, RAction, RText, RColor, RTextBase, RStyle
+
+from .utils import rtr, psi
 
 
 class MountableServer:
     def __init__(self, path):
         self.server_path = path
-        self._config = PSI.get_instance().load_config_simple(
+        self._config = psi.load_config_simple(
             target_class=Config,
             file_name=os.path.join(path, MOUNTABLE_CONFIG),
             in_data_folder=False
@@ -19,15 +21,19 @@ class MountableServer:
         self.load_properties()
         self.slot_lock = Lock()
 
+    @property
+    def name(self):
+        return os.path.basename(os.path.normpath(self.server_path))
+
     def load_config(self):
-        self._config = PSI.get_instance().load_config_simple(
+        self._config = psi.load_config_simple(
             target_class=Config,
             file_name=os.path.join(self.server_path, MOUNTABLE_CONFIG),
             in_data_folder=False
         )
 
     def save_config(self):
-        PSI.get_instance().save_config_simple(
+        psi.save_config_simple(
             config=self._config,
             file_name=os.path.join(self.server_path, MOUNTABLE_CONFIG),
             in_data_folder=False
@@ -62,3 +68,43 @@ class MountableServer:
             self._config.occupied = ""
             self.save_config()
         self.slot_lock.release()
+
+    def as_list_entry(self, mount_name: str, current_mount: str):
+        """
+        - path [⇄] <desc_short>
+        """
+
+        def get_button() -> RTextBase:
+            error_button = RText("[?]", color=RColor.red).h(rtr("button.error.hover"))
+            mount_button = RText("[⇄]")
+            reset_button = RText("[▷]", color=RColor.green).h(rtr("button.reset.hover")).c(RAction.suggest_command,
+                                                                                           COMMAND_PREFIX + " --reset")
+            if self.name == current_mount and mount_name == self.occupied:
+                if self.reset_path in ["", None]:
+                    reset_button.set_color(RColor.gray).h(rtr("button.reset.hover"))
+                else:
+                    reset_button.set_color(RColor.green).h()
+                return reset_button
+            elif self.occupied in [None, ""]:
+                return mount_button.h(rtr("button.mount.hover"))\
+                    .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.name)
+            elif self.occupied != mount_name and self.server_path != current_mount:
+                return mount_button.set_color(RColor.gray).h("button.occupied.hover")
+            else:
+                return error_button
+
+        def get_path():
+            path_text = RText(self.name).h(rtr("list.path.hover")).c(RAction.suggest_command, "")  # TODO:显示详情信息
+            if self.server_path == current_mount and mount_name == self.occupied:
+                path_text.set_color(RColor.green).set_styles(RStyle.underlined)
+            elif self.occupied in ["", None]:
+                path_text.set_color(RColor.gray)
+            else:
+                path_text.set_color(RColor.red)
+            return path_text
+
+        return RTextList(
+            get_path(),
+            get_button(),
+            RText(self.desc)
+        )

@@ -6,14 +6,17 @@
     "en_us": "Mount different minecraft server into a mcdr server, with overwritten properties!",
     "zh_cn": "将不同的MC服务器挂载进入一个mcdr服务器, 同时能够重写服务器配置!"
   },
-  "author": "YehowahLiu",
+  "author": ["YehowahLiu"],
   "link": "https://github.com/FAS-Server/Mount",
-  "entrypoint": "mount.entry",
   "dependencies": {
     "mcdreforged": ">=2.0.0"
   },
+  "entrypoint": "mount.entry",
+  "archive_name": "{id}-v{version}.pyz",
   "resources": [
     "lang",
-    "LICENSE"
+    "LICENSE",
+    "README.md",
+    "README_en.md"
   ]
 }
