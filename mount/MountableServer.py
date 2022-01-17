@@ -79,7 +79,7 @@ class MountableServer:
             mount_button = RText("[⇄]")
             reset_button = RText("[▷]", color=RColor.green).h(rtr("button.reset.hover")).c(RAction.suggest_command,
                                                                                            COMMAND_PREFIX + " --reset")
-            if self.name == current_mount and mount_name == self.occupied:
+            if self.server_path == current_mount and mount_name == self.occupied:
                 if self.reset_path in ["", None]:
                     reset_button.set_color(RColor.gray).h(rtr("button.reset.hover"))
                 else:

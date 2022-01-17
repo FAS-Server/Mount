@@ -92,9 +92,8 @@ class MountManager:
         with open('config.yml', 'w', encoding='utf-8') as f:
             yaml.dump(mcdr_config, f, default_flow_style=False)
 
-    def request_mount(self, source: CommandSource, slot_name: str, with_confirm: bool = False):
+    def request_mount(self, source: CommandSource, mount_path: str, with_confirm: bool = False):
         psi.logger.debug("Received mount request, evaluating...")
-        mount_path = os.path.join(self._config.servers_path, slot_name)
 
         if mount_path == self.current_slot.server_path:
             source.reply(rtr('error.is_current_mount'))
@@ -104,7 +103,7 @@ class MountManager:
             source.reply(rtr('error.mount_spam'))
             return
 
-        if not self._config.auto_detect and slot_name not in self._config.available_servers:
+        if mount_path not in self._config.available_servers:
             source.reply(rtr('error.unknown_mount_path'))
             return
 
@@ -158,6 +157,8 @@ class MountManager:
         self.patch_mcdr_config(slot)
         self.current_slot.release(self._config.mount_name)
         self.current_slot, self.future_slot = slot, None
+        self._config.current_server = slot.server_path
+        self._config.save()
         psi.execute_command("!!MCDR reload config")
         psi.execute_command("!!MCDR reload all")
         psi.start()
@@ -166,13 +167,12 @@ class MountManager:
         if not isinstance(self.future_slot, MountableServer):
             source.reply(rtr("error.nothing_to_abort"))
             return
-
+        self.future_slot.release(self._config.mount_name)
         self.future_slot = None
-        psi.broadcast(rtr("info.mount_abort"))
 
     def list_servers(self, src: CommandSource):
         for server in self._config.available_servers:
-            instance = MountableServer(path=self.get_server_path(server))
+            instance = MountableServer(path=server)
             src.reply(
                 instance.as_list_entry(
                     mount_name=self._config.mount_name,
@@ -186,4 +186,5 @@ class MountManager:
     def set_config(self, src: CommandSource, config_key, config_value):
         assert hasattr(self._config, config_key)
         self._config.__setattr__(name=config_key, value=config_value)
+        self._config.save()
         src.reply(rtr("info.setup_config", config_key, config_value))
