@@ -1,4 +1,4 @@
 COMMAND_PREFIX = "!!mount"
-SHORT_COMMAND_PREFIX = "!!m"
-CONFIG_NAME = "mount.json"
+CONFIG_NAME = "config/mount.json"
 MOUNTABLE_CONFIG = "mountable.json"
+IGNORE_PATTEN = ".mount-ignore"

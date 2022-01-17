@@ -1,12 +1,14 @@
 import json
 import os.path
+import time
 from typing import Optional, Dict, Any
 
 from .MountableServer import MountableServer
 from .config import MountConfig, MountableMCServerConfig
 from mcdreforged.api.types import CommandSource
 from mcdreforged.api.decorator import new_thread
-from .constants import MOUNTABLE_CONFIG
+from mcdreforged.api.rtext import RTextList, RAction, RText, RColor
+from .constants import MOUNTABLE_CONFIG, COMMAND_PREFIX, IGNORE_PATTEN
 from .utils import rtr, psi
 import yaml
 import functools
@@ -51,15 +53,41 @@ class MountManager:
     def detect_servers(self):
         """
         auto detect servers in target folder
+        you can add a file named '.mount-ignore' to ignore that folder TODO: add to readme
         """
+        script_map = {
+            'posix': './start.sh',
+            'nt': './start.bat'
+        }
 
-        def is_valid_server(path: str):
-            return os.path.isdir(path) and os.path.isfile(os.path.join(path, MOUNTABLE_CONFIG))
+        default_script = script_map[os.name] if os.name in script_map else './start.sh'
+        default_handler = 'vanilla_handler'
 
-        dirs = filter(is_valid_server, os.listdir(self._config.servers_path))
+        def is_valid_folder(path: str):
+            return os.path.isdir(path) \
+                   and not os.path.isfile(os.path.join(path, IGNORE_PATTEN)) \
+                   and path not in self._config.available_servers
+
+        def init_conf(path: str):
+            file_list = filter(lambda _: os.path.isfile(os.path.join(path, _)), os.listdir(path))
+            conf = MountableMCServerConfig(checked=False, start_command=default_script, handler=default_handler)
+            for file in file_list:
+                if file[:4] is 'paper' and file[-4:] is '.jar':
+                    conf.handler = 'bukkit_handler'
+                    break
+            psi.save_config_simple(
+                config=conf,
+                file_name=os.path.join(path, MOUNTABLE_CONFIG),
+                in_data_folder=False)
+
+        dirs = filter(is_valid_folder,
+                      map(lambda _: os.path.join(self._config.servers_path, _),
+                          os.listdir(self._config.servers_path)))
         for server_dir in dirs:
-            if server_dir not in self._config.available_servers:
-                self._config.available_servers.append(server_dir)
+            self._config.available_servers.append(server_dir)
+            if not os.path.isfile(os.path.join(server_dir, MOUNTABLE_CONFIG)):
+                init_conf(server_dir)
+        self._config.save()
 
     @new_thread(thread_name="mount-patch_properties")
     def patch_properties(self, slot: MountableServer):
@@ -132,7 +160,14 @@ class MountManager:
         if with_confirm:
             self._do_mount(self.future_slot)
         else:
-            source.reply(rtr("info.mount_confirm"))
+            text = RTextList(
+                RText(rtr("info.mount_request", server_path=self.future_slot.server_path), color=RColor.yellow),
+                RText(rtr('info.confirm'), color=RColor.green)
+                .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
+                ' ',
+                RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} --abort')
+            )
+            source.reply(text)
             # TODO: countdown for timeout (optional)
 
         return
@@ -148,7 +183,8 @@ class MountManager:
     def _do_mount(self, slot: MountableServer):
         # Stop the server for mount
         for t in range(10):
-            psi.broadcast(rtr('info.countdown'))
+            psi.broadcast(rtr('info.countdown', sec=10 - t))
+            time.sleep(1)
         psi.stop()
         psi.wait_for_start()
 

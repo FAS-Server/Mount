@@ -19,7 +19,7 @@ from .utils import rtr
 
 def register_commands(server: PluginServerInterface, manager: MountManager):
     # TODO
-    slot_node = Text("slot_name")
+    slot_node = Text("slot_path")
     config_node = Literal("--config").then(
         Text("config_key").requires(lambda src, ctx: ctx["config_key"] in manager.configurable_things).runs(
             lambda src, ctx: manager.get_config(src, ctx["config_key"])
@@ -30,7 +30,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
         )
     )
     main_node = Literal(COMMAND_PREFIX).runs(
-        lambda src: src.reply(rtr("info.help_msg"))
+        lambda src: src.reply(rtr("help_msg.full", prefix=COMMAND_PREFIX))
     ).then(
         Literal('--restore').runs(lambda src: src.reply(rtr("info.wip")))
     ).then(
@@ -38,14 +38,16 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         Literal('--list').runs(lambda src, ctx: manager.list_servers(src))
     ).then(
+        Literal('--abort').runs(lambda src, ctx: manager.abort_mount(src))
+    ).then(
         config_node
     ).then(
-        slot_node.requires(lambda src, ctx: ctx["slot_name"] in manager.servers_as_list).runs(
-            lambda src, ctx: manager.request_mount(src, ctx['slot_name'], with_confirm=False)
+        slot_node.requires(lambda src, ctx: ctx["slot_path"] in manager.servers_as_list).runs(
+            lambda src, ctx: manager.request_mount(src, ctx['slot_path'], with_confirm=False)
         ).then(
-            Literal("--confirm").runs(lambda src, ctx: manager.request_mount(src, ctx['slot_name'], with_confirm=True))
+            Literal("--confirm").runs(lambda src, ctx: manager.request_mount(src, ctx['slot_path'], with_confirm=True))
         )
     )
 
     server.register_command(main_node)
-    server.register_help_message(COMMAND_PREFIX, rtr("info.help_msg_brief"))
+    server.register_help_message(COMMAND_PREFIX, rtr("help_msg.brief"))

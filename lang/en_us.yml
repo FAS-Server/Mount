@@ -1,0 +1,31 @@
+mount:
+  help_msg:
+    full: |
+      ===== Mount =====
+      {prefix}: 显示这条帮助信息
+      {prefix} --list: 列出所有可选的服务器
+      {prefix} <server_name>: 挂载名为<server_name>的服务器
+      ?{prefix} --restore: 重置当前服务器
+      ?{prefix} --reload: 重载此插件, 并自动检测子服
+    brief: "在一个mcdr实例中挂载不同的服务端"
+  list:
+    hover_on_name: "点击查看服务端详情"
+    reset_btn:
+      unusable: "未配置重置路径"
+    mount_btn:
+      normal: "点击以挂载{server_name}"
+      occupied: "已被{occupied_by}占用"
+  error:
+    is_current_mount: "已经挂载到此槽位"
+    mount_spam: "有未处理的挂载请求, 不可重复挂载！"
+    unknown_mount_path: "未知的挂载目标, 请检查配置文件或者启用文件检测"
+    invalid_mount_path: "无效的挂载路径, 请检查配置!"
+    init_mountable_config: "挂载点无配置, 已生成默认配置, 请检查!"
+    occupied: "挂载点已经被占用"
+    nothing_to_confirm: "没有需要确认的请求!"
+    nothing_to_abort: "没有需要终止的请求!"
+  info:
+    mount_request: "将要挂载到{server_path}, "
+    confirm: "确认"
+    abort: "终止"
+    countdown: "即将关闭服务器进行挂载, 倒计时{sec}s"

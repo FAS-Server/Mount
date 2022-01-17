@@ -56,16 +56,16 @@ class MountableServer:
         acquired = self.slot_lock.acquire(blocking=False)
         if acquired:
             self.load_config()
-            if self._config.occupied in ["", None, mount_name]:
-                self._config.occupied = mount_name
+            if self._config.occupied_by in ["", None, mount_name]:
+                self._config.occupied_by = mount_name
                 self.save_config()
                 return
         raise ResourceWarning
 
     def release(self, mount_name: str):
         self.load_config()
-        if self._config.occupied == mount_name:
-            self._config.occupied = ""
+        if self._config.occupied_by == mount_name:
+            self._config.occupied_by = ""
             self.save_config()
         self.slot_lock.release()
 
@@ -76,27 +76,28 @@ class MountableServer:
 
         def get_button() -> RTextBase:
             error_button = RText("[?]", color=RColor.red).h(rtr("button.error.hover"))
-            mount_button = RText("[⇄]")
-            reset_button = RText("[▷]", color=RColor.green).h(rtr("button.reset.hover")).c(RAction.suggest_command,
+            mount_button = RText("[▷]")
+            reset_button = RText("[⇄]", color=RColor.green).h(rtr("button.reset.hover")).c(RAction.suggest_command,
                                                                                            COMMAND_PREFIX + " --reset")
             if self.server_path == current_mount and mount_name == self.occupied:
                 if self.reset_path in ["", None]:
-                    reset_button.set_color(RColor.gray).h(rtr("button.reset.hover"))
+                    reset_button.set_color(RColor.gray).h(rtr("list.reset_btn.unusable"))
                 else:
                     reset_button.set_color(RColor.green).h()
                 return reset_button
             elif self.occupied in [None, ""]:
-                return mount_button.h(rtr("button.mount.hover"))\
-                    .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.name)
+                return mount_button.h(rtr("list.mount_btn.normal", server_name=self.server_path))\
+                    .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.server_path)
             elif self.occupied != mount_name and self.server_path != current_mount:
-                return mount_button.set_color(RColor.gray).h("button.occupied.hover")
+                return mount_button.set_color(RColor.gray).h(
+                    rtr("list.mount_btn.occupied", occupied_by=self._config.occupied_by))
             else:
                 return error_button
 
         def get_path():
-            path_text = RText(self.name).h(rtr("list.path.hover")).c(RAction.suggest_command, "")  # TODO:显示详情信息
+            path_text = RText(self.name).h(rtr("list.hover_on_name")).c(RAction.suggest_command, "")  # TODO:显示详情信息
             if self.server_path == current_mount and mount_name == self.occupied:
-                path_text.set_color(RColor.green).set_styles(RStyle.underlined)
+                path_text.set_color(RColor.light_purple).set_styles(RStyle.bold)
             elif self.occupied in ["", None]:
                 path_text.set_color(RColor.gray)
             else:
@@ -105,6 +106,8 @@ class MountableServer:
 
         return RTextList(
             get_path(),
+            ' ',
             get_button(),
+            ' ',
             RText(self.desc)
         )
