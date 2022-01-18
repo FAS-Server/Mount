@@ -6,7 +6,7 @@ mount:
       {prefix} --list: 列出所有可选的服务器
       {prefix} <server_name>: 挂载名为<server_name>的服务器
       ?{prefix} --restore: 重置当前服务器
-      ?{prefix} --reload: 重载此插件, 并自动检测子服
+      {prefix} --reload: 重载此插件, 并自动检测子服
     brief: "在一个mcdr实例中挂载不同的服务端"
   list:
     hover_on_name: "点击查看服务端详情"

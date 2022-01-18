@@ -42,6 +42,8 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         config_node
     ).then(
+        Literal('--reload').runs(lambda src, ctx: manager.reload(src))
+    ).then(
         slot_node.requires(lambda src, ctx: ctx["slot_path"] in manager.servers_as_list).runs(
             lambda src, ctx: manager.request_mount(src, ctx['slot_path'], with_confirm=False)
         ).then(

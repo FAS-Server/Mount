@@ -79,13 +79,13 @@ class MountableServer:
             mount_button = RText("[▷]")
             reset_button = RText("[⇄]", color=RColor.green).h(rtr("button.reset.hover")).c(RAction.suggest_command,
                                                                                            COMMAND_PREFIX + " --reset")
-            if self.server_path == current_mount and mount_name == self.occupied:
+            if self.server_path == current_mount and mount_name == self.occupied_by:
                 if self.reset_path in ["", None]:
                     reset_button.set_color(RColor.gray).h(rtr("list.reset_btn.unusable"))
                 else:
                     reset_button.set_color(RColor.green).h()
                 return reset_button
-            elif self.occupied in [None, ""]:
+            elif self.occupied_by in [None, ""]:
                 return mount_button.h(rtr("list.mount_btn.normal", server_name=self.server_path))\
                     .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.server_path)
             elif self.occupied != mount_name and self.server_path != current_mount:
@@ -96,9 +96,9 @@ class MountableServer:
 
         def get_path():
             path_text = RText(self.name).h(rtr("list.hover_on_name")).c(RAction.suggest_command, "")  # TODO:显示详情信息
-            if self.server_path == current_mount and mount_name == self.occupied:
+            if self.server_path == current_mount and mount_name == self.occupied_by:
                 path_text.set_color(RColor.light_purple).set_styles(RStyle.bold)
-            elif self.occupied in ["", None]:
+            elif self.occupied_by in ["", None]:
                 path_text.set_color(RColor.gray)
             else:
                 path_text.set_color(RColor.red)

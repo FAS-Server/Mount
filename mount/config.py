@@ -42,5 +42,4 @@ class MountableMCServerConfig(Serializable):
     spec_plugin_dir: str = "mcdr_plg"
 
 # TODO: 两种重置方法：全重置和地图重置
-# TODO: 自动检测增强: 检查服务端类型和系统信息从而自动配置start_command和handler
 # TODO: 游戏内配置界面

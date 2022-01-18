@@ -34,6 +34,10 @@ class MountManager:
             return
         self.future_slot: Optional[MountableServer] = None
 
+    def reload(self, src: CommandSource):
+        self.detect_servers()
+        psi.reload_plugin(psi.get_self_metadata().id)
+
     def get_server_path(self, server_name: str):
         """
         convert server name to relative server path
@@ -72,7 +76,7 @@ class MountManager:
             file_list = filter(lambda _: os.path.isfile(os.path.join(path, _)), os.listdir(path))
             conf = MountableMCServerConfig(checked=False, start_command=default_script, handler=default_handler)
             for file in file_list:
-                if file[:4] is 'paper' and file[-4:] is '.jar':
+                if file[:5] is 'paper' and file[-4:] is '.jar':
                     conf.handler = 'bukkit_handler'
                     break
             psi.save_config_simple(
