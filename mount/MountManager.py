@@ -38,14 +38,6 @@ class MountManager:
         self.detect_servers(src)
         psi.reload_plugin(psi.get_self_metadata().id)
 
-    def get_server_path(self, server_name: str):
-        """
-        convert server name to relative server path
-        :param server_name:
-        :return: the relative server path
-        """
-        return os.path.join(self._config.servers_path, server_name)
-
     @property
     def servers_as_list(self):
         """
@@ -59,6 +51,9 @@ class MountManager:
         auto detect servers in target folder
         you can add a file named '.mount-ignore' to ignore that folder TODO: add to readme
         """
+        def is_ignored(path: str):
+            return os.path.isfile(os.path.join(path, IGNORE_PATTEN))
+
         script_map = {
             'posix': './start.sh',
             'nt': './start.bat'
@@ -66,10 +61,20 @@ class MountManager:
 
         default_script = script_map[os.name] if os.name in script_map else './start.sh'
         default_handler = 'vanilla_handler'
+        dirs = list(filter(lambda x: os.path.isdir(x), map(lambda _: os.path.join(self._config.servers_path, _),
+                    os.listdir(self._config.servers_path))))
+        index = 0
+        while index < len(self._config.available_servers):
+            server_path = self._config.available_servers[index]
+            if server_path not in dirs:
+                self._config.available_servers.pop(index)
+            elif is_ignored(server_path) and self._config.current_server != server_path:
+                self._config.available_servers.pop(index)
+            else:
+                index += 1
 
         def is_valid_folder(path: str):
-            return os.path.isdir(path) \
-                   and not os.path.isfile(os.path.join(path, IGNORE_PATTEN)) \
+            return not os.path.isfile(os.path.join(path, IGNORE_PATTEN)) \
                    and path not in self._config.available_servers
 
         def init_conf(path: str):
@@ -85,9 +90,7 @@ class MountManager:
                 in_data_folder=False)
             src.reply(rtr('detect.init_conf', path=path))
 
-        dirs = list(filter(is_valid_folder,
-                           map(lambda _: os.path.join(self._config.servers_path, _),
-                               os.listdir(self._config.servers_path))))
+        dirs = list(filter(is_valid_folder, dirs))
         for server_dir in dirs:
             self._config.available_servers.append(server_dir)
             src.reply(rtr('detect.detected', path=server_dir))
