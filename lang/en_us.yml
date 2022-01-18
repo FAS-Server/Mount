@@ -6,6 +6,7 @@ mount:
       {prefix} -list: 列出所有可选的服务器
       {prefix} <server_name>: 挂载名为<server_name>的服务器
       {prefix} -reload: 重载此插件, 并自动检测子服
+      {prefix} -config: 修改挂载配置
     brief: "在一个mcdr实例中挂载不同的服务端"
   list:
     hover_on_name: "点击查看服务端详情"
@@ -36,3 +37,21 @@ mount:
     detected: "检测到新文件夹: {path}"
     summary: "共检测到{num}个新挂载路径, 需要手动确认其配置"
     summary_empty: "未检测到新挂载路径"
+  config:
+    hover: "点击修改{key}"
+    empty: "空"
+    invalid_key: "无此配置项: {key}"
+    invalid_bool: "{value}不是一个有效的布尔值! 请使用true或false"
+    bool:
+      True: "是"
+      False: "否"
+    slot:
+      desc: "描述信息"
+      checked: "人工检查"
+      start_command: "启动命令"
+      handler: "消息处理器"
+      occupied_by: "占用情况"
+      reset_path: "重置路径"
+      reset_type: "重置方法"
+      spec_plugin_dir: "独立插件路径"
+    set_value: "选项 {key} 的值已经设为 {value}"

@@ -76,7 +76,7 @@ class MountManager:
             file_list = filter(lambda _: os.path.isfile(os.path.join(path, _)), os.listdir(path))
             conf = MountableMCServerConfig(checked=False, start_command=default_script, handler=default_handler)
             for file in file_list:
-                if file[:5] is 'paper' and file[-4:] is '.jar':
+                if file[:5] == 'paper' and file[-4:] == '.jar':
                     conf.handler = 'bukkit_handler'
                     break
             psi.save_config_simple(
@@ -198,7 +198,7 @@ class MountManager:
         self._do_mount(self.future_slot)
 
     def _do_reset(self):  # TODO 重置逻辑
-        if self.current_slot.reset_type is 'full':
+        if self.current_slot.reset_type == 'full':
             pass
 
     @new_thread(thread_name="mount-mounting")
@@ -246,3 +246,15 @@ class MountManager:
         self._config.__setattr__(name=config_key, value=config_value)
         self._config.save()
         src.reply(rtr("info.setup_config", config_key, config_value))
+
+    @staticmethod
+    def list_path_config(src: CommandSource, path: str):
+        slot_instance = MountableServer(path)
+        src.reply(slot_instance.show_config())
+        del slot_instance
+
+    def edit_path_config(self, src, path: CommandSource, key: str, value):
+        slot_instance = MountableServer(path)
+        src.reply(slot_instance.edit_config(key, value))
+        self.current_slot.load_config()
+        del slot_instance
