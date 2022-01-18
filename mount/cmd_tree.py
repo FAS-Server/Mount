@@ -18,7 +18,7 @@ from .utils import rtr
 
 
 def register_commands(server: PluginServerInterface, manager: MountManager):
-    # TODO
+    # TODO: 精细权限系统
     slot_node = Text("slot_path")
     config_node = Literal("--config").then(
         Text("config_key").requires(lambda src, ctx: ctx["config_key"] in manager.configurable_things).runs(
@@ -34,7 +34,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         Literal('--restore').runs(lambda src: src.reply(rtr("info.wip")))
     ).then(
-        Literal('--confirm').runs(lambda src, ctx: manager.confirm_mount(src))
+        Literal('--confirm').runs(lambda src, ctx: manager.confirm_operation(src))
     ).then(
         Literal('--list').runs(lambda src, ctx: manager.list_servers(src))
     ).then(

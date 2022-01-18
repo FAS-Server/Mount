@@ -45,8 +45,11 @@ class MountableServer:
         raise AttributeError
 
     def load_properties(self):
-        with open(os.path.join(self.server_path, 'server.properties'), 'rb') as f:
-            self.properties.load(f, 'utf-8')
+        try:
+            with open(os.path.join(self.server_path, 'server.properties'), 'rb') as f:
+                self.properties.load(f, 'utf-8')
+        except FileNotFoundError:
+            psi.logger.error(f'No properties file in {self.server_path}!')
 
     def save_properties(self):
         with open(os.path.join(self.server_path, 'server.properties'), 'wb') as f:
@@ -83,8 +86,10 @@ class MountableServer:
                 if self.reset_path in ["", None]:
                     reset_button.set_color(RColor.gray).h(rtr("list.reset_btn.unusable"))
                 else:
-                    reset_button.set_color(RColor.green).h()
+                    reset_button.set_color(RColor.green).h(rtr("list.reset_btn.reset"))
                 return reset_button
+            elif not self._config.checked:
+                return mount_button.set_color(RColor.gray).h(rtr('list.mount_btn.uncheck'))
             elif self.occupied_by in [None, ""]:
                 return mount_button.h(rtr("list.mount_btn.normal", server_name=self.server_path))\
                     .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.server_path)
@@ -96,7 +101,9 @@ class MountableServer:
 
         def get_path():
             path_text = RText(self.name).h(rtr("list.hover_on_name")).c(RAction.suggest_command, "")  # TODO:显示详情信息
-            if self.server_path == current_mount and mount_name == self.occupied_by:
+            if not self._config.checked:
+                path_text.set_color(RColor.gray).set_styles(RStyle.strikethrough)
+            elif self.server_path == current_mount and mount_name == self.occupied_by:
                 path_text.set_color(RColor.light_purple).set_styles(RStyle.bold)
             elif self.occupied_by in ["", None]:
                 path_text.set_color(RColor.gray)

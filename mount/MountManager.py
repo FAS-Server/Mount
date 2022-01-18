@@ -35,7 +35,7 @@ class MountManager:
         self.future_slot: Optional[MountableServer] = None
 
     def reload(self, src: CommandSource):
-        self.detect_servers()
+        self.detect_servers(src)
         psi.reload_plugin(psi.get_self_metadata().id)
 
     def get_server_path(self, server_name: str):
@@ -54,7 +54,7 @@ class MountManager:
         """
         return self._config.available_servers
 
-    def detect_servers(self):
+    def detect_servers(self, src: CommandSource):
         """
         auto detect servers in target folder
         you can add a file named '.mount-ignore' to ignore that folder TODO: add to readme
@@ -83,14 +83,20 @@ class MountManager:
                 config=conf,
                 file_name=os.path.join(path, MOUNTABLE_CONFIG),
                 in_data_folder=False)
+            src.reply(rtr('detect.init_conf', path=path))
 
-        dirs = filter(is_valid_folder,
-                      map(lambda _: os.path.join(self._config.servers_path, _),
-                          os.listdir(self._config.servers_path)))
+        dirs = list(filter(is_valid_folder,
+                           map(lambda _: os.path.join(self._config.servers_path, _),
+                               os.listdir(self._config.servers_path))))
         for server_dir in dirs:
             self._config.available_servers.append(server_dir)
+            src.reply(rtr('detect.detected', path=server_dir))
             if not os.path.isfile(os.path.join(server_dir, MOUNTABLE_CONFIG)):
                 init_conf(server_dir)
+        if len(dirs) > 0:
+            src.reply(rtr('detect.summary', num=len(dirs)))
+        else:
+            src.reply(rtr('detect.summary_empty'))
         self._config.save()
 
     @new_thread(thread_name="mount-patch_properties")
@@ -152,6 +158,10 @@ class MountManager:
             return
 
         future_slot = MountableServer(mount_path)
+        if not future_slot.checked:
+            source.reply(rtr('error.unchecked_path'))
+            return
+
         try:
             future_slot.lock(self._config.mount_name)
             self.future_slot = future_slot
@@ -167,7 +177,7 @@ class MountManager:
             text = RTextList(
                 RText(rtr("info.mount_request", server_path=self.future_slot.server_path), color=RColor.yellow),
                 RText(rtr('info.confirm'), color=RColor.green)
-                .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
+                    .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
                 ' ',
                 RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} --abort')
             )
@@ -176,12 +186,20 @@ class MountManager:
 
         return
 
-    def confirm_mount(self, source: CommandSource):
+    def request_reset(self, with_confirm=False):
+        # TODO: request reset
+        pass
+
+    def confirm_operation(self, source: CommandSource):
         if not isinstance(self.future_slot, MountableServer):
             source.reply(rtr('error.nothing_to_confirm'))
             return
 
         self._do_mount(self.future_slot)
+
+    def _do_reset(self):  # TODO 重置逻辑
+        if self.current_slot.reset_type is 'full':
+            pass
 
     @new_thread(thread_name="mount-mounting")
     def _do_mount(self, slot: MountableServer):
