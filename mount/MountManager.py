@@ -177,9 +177,9 @@ class MountManager:
             text = RTextList(
                 RText(rtr("info.mount_request", server_path=self.future_slot.server_path), color=RColor.yellow),
                 RText(rtr('info.confirm'), color=RColor.green)
-                    .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
+                    .c(RAction.suggest_command, f'{COMMAND_PREFIX} -confirm'),
                 ' ',
-                RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} --abort')
+                RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} -abort')
             )
             source.reply(text)
             # TODO: countdown for timeout (optional)
