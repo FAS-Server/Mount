@@ -74,13 +74,13 @@ class MountableServer:
 
     def as_list_entry(self, mount_name: str, current_mount: str):
         """
-        - path [⇄] <desc_short>
+        - path [↻] <desc_short>
         """
 
         def get_button() -> RTextBase:
             error_button = RText("[?]", color=RColor.red).h(rtr("button.error.hover"))
             mount_button = RText("[▷]")
-            reset_button = RText("[⇄]", color=RColor.green).h(rtr("button.reset.hover")).c(RAction.suggest_command,
+            reset_button = RText("[↻]", color=RColor.yellow).h(rtr("button.reset.hover")).c(RAction.suggest_command,
                                                                                            COMMAND_PREFIX + " -reset")
             if self.server_path == current_mount and mount_name == self.occupied_by:
                 if self.reset_path in ["", None]:
@@ -107,15 +107,15 @@ class MountableServer:
             elif self.server_path == current_mount and mount_name == self.occupied_by:
                 path_text.set_color(RColor.light_purple).set_styles(RStyle.bold)
             elif self.occupied_by in ["", None]:
-                path_text.set_color(RColor.gray)
+                path_text.set_color(RColor.green)
             else:
                 path_text.set_color(RColor.red)
             return path_text
 
         return RTextList(
-            get_path(),
-            ' ',
             get_button(),
+            ' ',
+            get_path(),
             ' ',
             RText(self.desc)
         )

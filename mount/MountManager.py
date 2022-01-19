@@ -260,7 +260,7 @@ class MountManager:
         # check for operation here
         if self.current_slot.reset_path in ['', None] \
                 or not os.path.isdir(
-                os.path.join(self.current_slot.server_path, self.current_slot.reset_path)):
+            os.path.join(self.current_slot.server_path, self.current_slot.reset_path)):
             source.reply(rtr('error.reset.invalid_path'))
             return
         if self.current_slot.reset_type not in ['full', 'region']:
@@ -370,6 +370,7 @@ class MountManager:
 
     @new_thread('mount-list')
     def list_servers(self, src: CommandSource):
+        src.reply(RText(rtr('list.title')))
         for server in self._config.available_servers:
             instance = MountableServer(path=server)
             src.reply(
@@ -378,9 +379,11 @@ class MountManager:
                     current_mount=self._config.current_server
                 ))
 
-    def get_config(self, src: CommandSource, config_key):
-        assert hasattr(self._config, config_key)
-        src.reply(self._config.__getattribute__(config_key))
+    def get_config(self, config_key, src: Optional[CommandSource] = None):
+        if src is not None:
+            src.reply(self._config.__getattribute__(config_key))
+        else:
+            return self._config.__getattribute__(config_key)
 
     def set_config(self, src: CommandSource, config_key, config_value):
         assert hasattr(self._config, config_key)

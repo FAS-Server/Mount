@@ -6,6 +6,7 @@ from .constants import CONFIG_NAME
 
 
 class MountConfig(Serializable):
+    short_prefix = True  # let !!m to be a short command
     servers_path: str = "../MountableServers"
 
     # whether to overwrite the mc server properties
@@ -17,9 +18,6 @@ class MountConfig(Serializable):
 
     current_server: str = "Parkour"
     mount_name: str = "MountDemo"
-    command_permission: Dict[str, int] = {
-        "mount_server": 2
-    }
     DEBUG: bool = False
 
     def save(self):

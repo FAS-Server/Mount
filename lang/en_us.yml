@@ -1,15 +1,16 @@
 mount:
   help_msg:
-    full: |
-      ===== Mount =====
-      {prefix}: 显示这条帮助信息
-      {prefix} -list: 列出所有可选的服务器
-      {prefix} <server_name>: 挂载名为<server_name>的服务器
-      {prefix} -reload: 重载此插件, 并自动检测子服
-      {prefix} -reset: 重置地图
-      {prefix} -config: 修改挂载配置
+    click_to_fill: "点击以填入{cmd}"
+    title: "§6=====§r §l§5Mount v{version}§r §6=====§r"
+    command:
+      list: "列出所有可选挂载服务器"
+      reload: "重载此插件配置, 同时自动检测可用挂载点"
+      mount: "挂载名为§a<server_name>§r的服务器"
+      reset: "重置地图"
+      config: "修改挂载配置信息"
     brief: "在一个mcdr实例中挂载不同的服务端"
   list:
+    title: "§6=====§r §l§5Mount 挂载点列表§r §6=====§r"
     hover_on_name: "点击查看服务端详情"
     reset_btn:
       unusable: "未配置重置路径"
@@ -28,6 +29,7 @@ mount:
     nothing_to_abort: "没有需要终止的请求!"
     unchecked_path: "未确认的挂载路径, 请联系管理员进行操作!"
     operation_conflict: "操作冲突, 当前正在{curr}中"
+    perm_deny: "权限不足"
   info:
     mount_request: "将要挂载到{server_path}, "
     reset_request: "将要从 {reset_path} 重置地图, "
