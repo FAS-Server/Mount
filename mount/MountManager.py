@@ -1,10 +1,9 @@
-import json
 import os.path
 import shutil
 import time
 from enum import Enum
 from threading import Lock
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Callable
 
 from jproperties import Properties
 
