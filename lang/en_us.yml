@@ -1,5 +1,6 @@
 mount:
   help_msg:
+    welcome: "此服务器通过mount插件添加了多挂载点支持, 输入!!mount可获取帮助信息"
     click_to_fill: "点击以填入{cmd}"
     title: "§6=====§r §l§5Mount v{version}§r §6=====§r"
     command:
@@ -9,6 +10,9 @@ mount:
       reset: "重置地图"
       config: "修改挂载配置信息"
     brief: "在一个mcdr实例中挂载不同的服务端"
+    config:
+      all: "显示<server_name>的所有配置项"
+      edit: "将<server_name>的配置项<key>的值修改为<value>"
   list:
     title: "§6=====§r §l§5Mount 挂载点列表§r §6=====§r"
     hover_on_name: "点击查看服务端详情"

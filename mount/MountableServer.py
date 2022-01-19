@@ -81,9 +81,9 @@ class MountableServer:
             error_button = RText("[?]", color=RColor.red).h(rtr("button.error.hover"))
             mount_button = RText("[▷]")
             reset_button = RText("[↻]", color=RColor.yellow).h(rtr("button.reset.hover")).c(RAction.suggest_command,
-                                                                                           COMMAND_PREFIX + " -reset")
+                                                                                            COMMAND_PREFIX + " -reset")
             if self.server_path == current_mount and mount_name == self.occupied_by:
-                if self.reset_path in ["", None]:
+                if self.reset_path in ["", None, '.']:
                     reset_button.set_color(RColor.gray).h(rtr("list.reset_btn.unusable"))
                 else:
                     reset_button.set_color(RColor.green).h(rtr("list.reset_btn.reset"))
@@ -100,7 +100,7 @@ class MountableServer:
                 return error_button
 
         def get_path():
-            path_text = RText(self.name).h(rtr("list.hover_on_name"))\
+            path_text = RText(self.name).h(rtr("list.hover_on_name")) \
                 .c(RAction.suggest_command, f"{COMMAND_PREFIX} -config {self.server_path}")
             if not self._config.checked:
                 path_text.set_color(RColor.gray).set_styles(RStyle.strikethrough)
@@ -126,13 +126,13 @@ class MountableServer:
         def get_config_text(config_key: str):
             config_value = self._config.__getattribute__(config_key)
             suggested_value = config_value
-            if config_value in ['', None]:
+            if config_value in ['', None, '.']:
                 config_value = rtr('config.empty')
             elif isinstance(config_value, bool):
                 suggested_value = not config_value
                 config_value = rtr(f'config.bool.{config_value}')
-            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n')\
-                .h(rtr(f'config.hover', key=config_key))\
+            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
+                .h(rtr(f'config.hover', key=config_key)) \
                 .c(RAction.suggest_command,
                    f'{COMMAND_PREFIX} -config {self.server_path} set {config_key} {suggested_value}')
 

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 
 from mcdreforged.api.utils import Serializable
 from .utils import psi
@@ -6,6 +6,7 @@ from .constants import CONFIG_NAME
 
 
 class MountConfig(Serializable):
+    welcome_player: bool = True
     short_prefix = True  # let !!m to be a short command
     servers_path: str = "../MountableServers"
 
@@ -34,10 +35,7 @@ class MountableMCServerConfig(Serializable):
     occupied_by: str = ""
     # backup path for reset, empty for disable, should be relative to mc server path
     reset_path: str = "reset_path"
-    reset_type: str = "full"  # TODO: full|region
+    reset_type: str = "full"
 
     # mcdr plugin path for specific plugin, empty for disable, should be relative to mc server path
     spec_plugin_dir: str = "mcdr_plg"
-
-# TODO: 两种重置方法：全重置和地图重置
-# TODO: 游戏内配置界面

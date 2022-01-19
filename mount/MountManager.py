@@ -187,12 +187,12 @@ class MountManager:
         mcdr_config['working_directory'] = slot.server_path
         mcdr_config['start_command'] = slot.start_command
         mcdr_config['handler'] = slot.handler
-        if self.current_slot.spec_plugin_dir not in ['', None]:
+        if self.current_slot.spec_plugin_dir not in ['', None, '.']:
             try:
                 mcdr_config['plugin_directories'].remove(self.current_slot.spec_plugin_dir)
             except ValueError:
                 pass
-        if slot.spec_plugin_dir not in ['', None]:
+        if slot.spec_plugin_dir not in ['', None, '.']:
             mcdr_config['plugin_directories'].append(slot.spec_plugin_dir)
 
         with open('config.yml', 'w', encoding='utf-8') as f:
@@ -258,9 +258,9 @@ class MountManager:
     def request_reset(self, source: CommandSource):
         global current_op
         # check for operation here
-        if self.current_slot.reset_path in ['', None] \
+        if self.current_slot.reset_path in ['', None, '.'] \
                 or not os.path.isdir(
-            os.path.join(self.current_slot.server_path, self.current_slot.reset_path)):
+                os.path.join(self.current_slot.server_path, self.current_slot.reset_path)):
             source.reply(rtr('error.reset.invalid_path'))
             return
         if self.current_slot.reset_type not in ['full', 'region']:
