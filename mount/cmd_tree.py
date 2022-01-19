@@ -44,13 +44,13 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     main_node = Literal(COMMAND_PREFIX).runs(
         lambda src: src.reply(rtr("help_msg.full", prefix=COMMAND_PREFIX))
     ).then(
-        Literal('-restore').runs(lambda src: src.reply(rtr("info.wip")))
+        Literal('-reset').runs(lambda src: manager.request_reset(src))
     ).then(
         Literal('-confirm').runs(lambda src, ctx: manager.confirm_operation(src))
     ).then(
         Literal('-list').runs(lambda src, ctx: manager.list_servers(src))
     ).then(
-        Literal('-abort').runs(lambda src, ctx: manager.abort_mount(src))
+        Literal('-abort').runs(lambda src, ctx: manager.abort_operation(src))
     ).then(
         config_node
     ).then(

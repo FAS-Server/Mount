@@ -93,7 +93,7 @@ class MountableServer:
             elif self.occupied_by in [None, ""]:
                 return mount_button.h(rtr("list.mount_btn.normal", server_name=self.server_path)) \
                     .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.server_path)
-            elif self.occupied != mount_name and self.server_path != current_mount:
+            elif self.occupied_by != mount_name and self.server_path != current_mount:
                 return mount_button.set_color(RColor.gray).h(
                     rtr("list.mount_btn.occupied", occupied_by=self._config.occupied_by))
             else:

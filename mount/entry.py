@@ -19,4 +19,4 @@ def on_load(server: PluginServerInterface, prev_module):
 
 def on_unload(server: PluginServerInterface):
     global manager
-    manager.abort_mount(source=server.get_plugin_command_source())
+    manager.abort_operation(source=server.get_plugin_command_source())

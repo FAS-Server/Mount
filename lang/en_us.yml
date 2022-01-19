@@ -6,6 +6,7 @@ mount:
       {prefix} -list: 列出所有可选的服务器
       {prefix} <server_name>: 挂载名为<server_name>的服务器
       {prefix} -reload: 重载此插件, 并自动检测子服
+      {prefix} -reset: 重置地图
       {prefix} -config: 修改挂载配置
     brief: "在一个mcdr实例中挂载不同的服务端"
   list:
@@ -26,11 +27,16 @@ mount:
     nothing_to_confirm: "没有需要确认的请求!"
     nothing_to_abort: "没有需要终止的请求!"
     unchecked_path: "未确认的挂载路径, 请联系管理员进行操作!"
+    operation_conflict: "操作冲突, 当前正在{curr}中"
   info:
     mount_request: "将要挂载到{server_path}, "
+    reset_request: "将要从 {reset_path} 重置地图, "
     confirm: "确认"
     abort: "终止"
-    countdown: "即将关闭服务器进行挂载, 倒计时{sec}s"
+    countdown: "即将关闭服务器进行{reason}, 倒计时{sec}s"
+    countdown_reason:
+      mount: "挂载"
+      reset: "重置"
     wip: "功能未实现"
   detect:
     init_conf: "路径 {path} 无挂载配置, 为其自动生成..."
