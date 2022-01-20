@@ -64,5 +64,5 @@ mount:
       occupied_by: "占用情况"
       reset_path: "重置路径"
       reset_type: "重置方法"
-      spec_plugin_dir: "独立插件路径"
+      plugin_dir: "独立插件路径"
     set_value: "选项 {key} 的值已经设为 {value}"

@@ -64,5 +64,5 @@ mount:
       occupied_by: "Occupied By"
       reset_path: "Reset Path"
       reset_type: "Reset Type"
-      spec_plugin_dir: "Specified Plugin Path"
+      plugin_dir: "Specified Plugin Path"
     set_value: "Value of {key} has been set to {value}"
