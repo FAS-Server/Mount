@@ -68,7 +68,7 @@ def need_restart(reason: RTextBase):
             func(*args, **kwargs)
             psi.start()
             current_op = Operation.IDLE
-
+            psi.execute_command('!!MCDR r plg')
         return wrap
 
     return wrapper
@@ -83,7 +83,6 @@ class MountManager:
         self.configurable_things = None
         self.__abort_mount = None
         self._config = config
-        self.debug_logger = functools.partial(psi.logger.debug, no_check=self._config.DEBUG)
         self.current_slot: Optional[MountableServer] = MountableServer(self._config.current_server)
         try:
             self.current_slot.lock(self._config.mount_name)
@@ -109,13 +108,14 @@ class MountManager:
 
     def detect_servers(self, src: CommandSource):
         """
-        auto detect servers in target folder
-        you can add a file named '.mount-ignore' to ignore that folder TODO: add to readme
+        auto-detect servers in target folder
+        you can add a file named '.mount-ignore' to ignore that folder
         """
-
         def is_ignored(path: str):
             return os.path.isfile(os.path.join(path, IGNORE_PATTEN))
 
+        self._config = psi.load_config_simple(
+            file_name=MOUNTABLE_CONFIG, target_class=MountConfig, in_data_folder=False)
         script_map = {
             'posix': './start.sh',
             'nt': './start.bat'
@@ -166,6 +166,8 @@ class MountManager:
 
     @new_thread(thread_name="mount-patch_properties")
     def patch_properties(self, slot: MountableServer):
+        if self._config.overwrite_path in ['', '.', None]:
+            return
         psi.logger.info("Patching properties file...")
         slot.load_properties()
         patches = Properties()
@@ -187,13 +189,13 @@ class MountManager:
         mcdr_config['working_directory'] = slot.server_path
         mcdr_config['start_command'] = slot.start_command
         mcdr_config['handler'] = slot.handler
-        if self.current_slot.spec_plugin_dir not in ['', None, '.']:
+        if self.current_slot.plg_dir not in ['', None, '.']:
             try:
-                mcdr_config['plugin_directories'].remove(self.current_slot.spec_plugin_dir)
+                mcdr_config['plugin_directories'].remove(self.current_slot.plg_dir)
             except ValueError:
                 pass
-        if slot.spec_plugin_dir not in ['', None, '.']:
-            mcdr_config['plugin_directories'].append(slot.spec_plugin_dir)
+        if slot.plg_dir not in ['', None, '.']:
+            mcdr_config['plugin_directories'].append(slot.plg_dir)
 
         with open('config.yml', 'w', encoding='utf-8') as f:
             yaml.dump(mcdr_config, f, default_flow_style=False)

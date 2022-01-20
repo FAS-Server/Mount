@@ -25,6 +25,13 @@ class MountableServer:
     def name(self):
         return os.path.basename(os.path.normpath(self.server_path))
 
+    @property
+    def plg_dir(self):
+        if self._config.plugin_dir in ['', '.', None]:
+            return ''
+        else:
+            return os.path.join(self.server_path, self._config.plugin_dir)
+
     def load_config(self):
         self._config = psi.load_config_simple(
             target_class=Config,
