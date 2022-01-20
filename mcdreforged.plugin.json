@@ -1,6 +1,6 @@
 {
   "id": "mount",
-  "version": "0.0.1-dev01",
+  "version": "0.1.0-beta1",
   "name": "Mount",
   "description": {
     "en_us": "Mount different minecraft server into a mcdr server, with overwritten properties!",
@@ -12,7 +12,7 @@
     "mcdreforged": ">=2.0.0"
   },
   "entrypoint": "mount.entry",
-  "archive_name": "{id}-v{version}.pyz",
+  "archive_name": "Mount-v{version}.pyz",
   "resources": [
     "lang",
     "LICENSE",
