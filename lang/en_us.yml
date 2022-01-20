@@ -18,6 +18,7 @@ mount:
     hover_on_name: "Click to show details"
     reset_btn:
       unusable: "Reset path not given"
+      reset: "Click to reset"
     mount_btn:
       normal: "Click to mount{server_name}"
       occupied: "This server is already occupied by {occupied_by}"

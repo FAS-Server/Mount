@@ -18,6 +18,7 @@ mount:
     hover_on_name: "点击查看服务端详情"
     reset_btn:
       unusable: "未配置重置路径"
+      reset: "点击重置世界"
     mount_btn:
       normal: "点击以挂载{server_name}"
       occupied: "已被{occupied_by}占用"

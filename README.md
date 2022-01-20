@@ -1,5 +1,7 @@
 # Mount
 
+![MCDReforged](https://img.shields.io/badge/dynamic/json?label=MCDReforged&query=dependencies.mcdreforged&url=https%3A%2F%2Fraw.githubusercontent.com%2FFAS-Server%2FMount%2Fmaster%2Fmcdreforged.plugin.json&style=plastic) ![license](https://img.shields.io/github/license/FAS-Server/Mount?style=plastic) ![build status](https://img.shields.io/github/workflow/status/FAS-Server/Mount/CI%20for%20MCDR%20Plugin?label=build&style=plastic) ![Release](https://img.shields.io/github/v/release/FAS-Server/Mount?style=plastic) ![total download](https://img.shields.io/github/downloads/FAS-Server/Mount/total?label=total%20download&style=plastic)
+
 **简体中文** | **[English](README_en.md)**
 
 > 一个可以在单MCDR实例下挂载多个MC服务器的插件
