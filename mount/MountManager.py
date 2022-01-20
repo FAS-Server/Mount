@@ -118,7 +118,7 @@ class MountManager:
             file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
         script_map = {
             'posix': './start.sh',
-            'nt': './start.bat'
+            'nt': 'start.bat'
         }
 
         default_script = script_map[os.name] if os.name in script_map else './start.sh'
