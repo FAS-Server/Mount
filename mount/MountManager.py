@@ -210,10 +210,6 @@ class MountManager:
             source.reply(rtr('error.is_current_mount'))
             return
 
-        # if isinstance(self.future_slot, MountableServer):  # check if there is a previous mount request
-        #     source.reply(rtr('error.mount_spam'))
-        #     return
-
         if path not in self._config.available_servers:
             source.reply(rtr('error.unknown_mount_path'))
             return

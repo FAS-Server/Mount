@@ -1,6 +1,6 @@
 mount:
   help_msg:
-    welcome: "此服务器通过mount插件添加了多挂载点支持, 输入!!mount可获取帮助信息"
+    welcome: "此服务器通过mount插件添加了多挂载点支持, 输入§e!!mount§r可获取帮助信息"
     click_to_fill: "点击以填入{cmd}"
     title: "§6=====§r §l§5Mount v{version}§r §6=====§r"
     command:
@@ -24,9 +24,8 @@ mount:
       uncheck: "槽位信息未确认, 请联系管理员进行操作"
   error:
     is_current_mount: "已经挂载到此槽位"
-    mount_spam: "有未处理的挂载请求, 不可重复挂载！"
-    unknown_mount_path: "未知的挂载目标, 请检查配置文件或者启用文件检测"
-    invalid_mount_path: "无效的挂载路径, 请检查配置!"
+    unknown_mount_path: "未知的挂载目标, 请检查挂载列表"
+    invalid_mount_path: "无效的挂载路径!"
     init_mountable_config: "挂载点无配置, 已生成默认配置, 请检查!"
     occupied: "挂载点已经被占用"
     nothing_to_confirm: "没有需要确认的请求!"
@@ -51,12 +50,12 @@ mount:
     summary_empty: "未检测到新挂载路径"
   config:
     hover: "点击修改{key}"
-    empty: "空"
+    empty: "§e空§r"
     invalid_key: "无此配置项: {key}"
     invalid_bool: "{value}不是一个有效的布尔值! 请使用true或false"
     bool:
-      True: "是"
-      False: "否"
+      True: "§a是§r"
+      False: "§c否§r"
     slot:
       desc: "描述信息"
       checked: "人工检查"
