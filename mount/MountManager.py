@@ -12,7 +12,7 @@ from .config import MountConfig, MountableMCServerConfig
 from mcdreforged.api.types import CommandSource
 from mcdreforged.api.decorator import new_thread
 from mcdreforged.api.rtext import RTextList, RAction, RText, RColor, RTextBase
-from .constants import MOUNTABLE_CONFIG, COMMAND_PREFIX, IGNORE_PATTEN
+from .constants import MOUNTABLE_CONFIG, COMMAND_PREFIX, IGNORE_PATTEN, CONFIG_NAME
 from .utils import rtr, psi
 import yaml
 import functools
@@ -115,7 +115,7 @@ class MountManager:
             return os.path.isfile(os.path.join(path, IGNORE_PATTEN))
 
         self._config = psi.load_config_simple(
-            file_name=MOUNTABLE_CONFIG, target_class=MountConfig, in_data_folder=False)
+            file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
         script_map = {
             'posix': './start.sh',
             'nt': './start.bat'
