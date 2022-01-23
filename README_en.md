@@ -8,7 +8,17 @@
 
 ## Usage
 
-Type `!!mount` to get help
+1. Deploy a MCDR instance(with MC server), and start it with this plugin
+
+2. Edit the main config according to (Config)[## Config], then reload this plugin(by command `!!mount -r` or other command provided by MCDR)
+
+3. Edit the file of `overwrite_name` which is configed at setp 2, Recommand to set up server port and rcon to get a consistent experience 
+
+4. Add more MC server into the `servers_path` at step 2, then you can use `!!mount -l` to see them and edit their config according to (Config)[## Config], finally make sure set `checked` to true
+
+5. Type `!!mount -l` now, you can see available servers now, and then mount it
+
+6. For more command, type `!!mount` in game to get help
 
 ## Config
 1. Main config, stored in config folder with name `mount.json`, and path in the config value should be relative to mcdr instance folder
@@ -20,7 +30,7 @@ Type `!!mount` to get help
   short_prefix: true,
   // path used for auto-detect
   servers_path: "./servers",
-  // file used to overwrite server.properties
+  // file used to overwrite server.properties, same format with server.properties but add necessary configs only
   overwrite_name: "../servers/server.properties.overwrite",
   // available mount servers
   available_servers: [
