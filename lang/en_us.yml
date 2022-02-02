@@ -32,7 +32,7 @@ mount:
     nothing_to_confirm: "Nothing to confirm!"
     nothing_to_abort: "Nothing to abort!"
     unchecked_path: "Unchecked mountable config, please contact server admin for help!"
-    operation_conflict: "Operation conflict with current: {}"
+    operation_conflict: "Operation conflict with current: {curr}"
     perm_deny: "Permission denied!"
   info:
     mount_request: "Received request to mount {server_path}, "

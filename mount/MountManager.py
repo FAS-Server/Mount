@@ -33,7 +33,7 @@ current_op = Operation.IDLE
 def single_op(op_type: Operation):
     def wrapper(func: Callable):
         @functools.wraps(func)
-        def wrap(src: CommandSource, *args, **kwargs):
+        def wrap(manager, src: CommandSource, *args, **kwargs):
             with _operation_lock:
                 global current_op
                 allow = False
@@ -45,10 +45,11 @@ def single_op(op_type: Operation):
                     allow = True
                 elif current_op in [Operation.REQUEST_RESET, Operation.REQUEST_MOUNT] and op_type is Operation.IDLE:
                     allow = True
+                psi.logger.debug(f"Executing operation {op_type}, current operation {current_op}, allow = {allow}")
                 if allow:
-                    func(src, *args, **kwargs)
+                    func(manager, src, *args, **kwargs)
                 else:
-                    src.reply(rtr('error.operation_conflict', curr=current_op))
+                    src.reply(rtr('error.operation_conflict', curr=current_op.value))
 
         return wrap
 
