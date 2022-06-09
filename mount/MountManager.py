@@ -124,8 +124,17 @@ class MountManager:
 
         default_script = script_map[os.name] if os.name in script_map else './start.sh'
         default_handler = 'vanilla_handler'
-        dirs = list(filter(lambda x: os.path.isdir(x), map(lambda _: os.path.join(self._config.servers_path, _),
-                                                           os.listdir(self._config.servers_path))))
+
+        # find all possible server in given path(s) and hold the search result in dirs
+        dirs = []
+        if isinstance(self._config.servers_path, str):
+            dirs = list(filter(lambda x: os.path.isdir(x), map(lambda _: os.path.join(self._config.servers_path, _),
+                                                               os.listdir(self._config.servers_path))))
+        else:
+            for server_path in self._config.servers_path:
+                dirs.append(list(filter(lambda x: os.path.isdir(x), map(lambda _: os.path.join(server_path, _),
+                                                                        os.listdir(server_path)))))
+        # pop out deleted/ignored server from available servers
         index = 0
         while index < len(self._config.available_servers):
             server_path = self._config.available_servers[index]
@@ -153,6 +162,7 @@ class MountManager:
                 in_data_folder=False)
             src.reply(rtr('detect.init_conf', path=path))
 
+        # add valid search result into available servers and initicial config file for them
         dirs = list(filter(is_valid_folder, dirs))
         for server_dir in dirs:
             self._config.available_servers.append(server_dir)
