@@ -165,7 +165,7 @@ class MountManager:
             src.reply(rtr('detect.summary_empty'))
         self._config.save()
 
-    @new_thread(thread_name="mount-patch_properties")
+    @new_thread("mount-patch_properties")
     def patch_properties(self, slot: MountableServer):
         if self._config.overwrite_path in ['', '.', None]:
             return
@@ -182,7 +182,7 @@ class MountManager:
             slot.properties[k] = v
         slot.save_properties()
 
-    @new_thread(thread_name="mount-patch_mcdr_config")
+    @new_thread("mount-patch_mcdr_config")
     def patch_mcdr_config(self, slot: MountableServer):
         with open("config.yml", "r", encoding="utf-8") as f:
             mcdr_config = yaml.safe_load(f)
@@ -284,7 +284,7 @@ class MountManager:
             else:
                 self._do_mount(source, self.future_slot)
 
-    @new_thread(thread_name='mount-resetting')
+    @new_thread('mount-resetting')
     @single_op(Operation.RESET)
     @need_restart(reason=rtr('info.countdown_reason.reset'))
     def _do_reset(self, source: CommandSource, slot: MountableServer):
@@ -340,7 +340,7 @@ class MountManager:
                 psi.logger.info(f'Resetting {i}')
                 shutil.copytree(dir2, dir1)
 
-    @new_thread(thread_name="mount-mounting")
+    @new_thread("mount-mounting")
     @single_op(Operation.MOUNT)
     @need_restart(reason=rtr('info.countdown_reason.mount'))
     def _do_mount(self, source: CommandSource, slot: MountableServer):
