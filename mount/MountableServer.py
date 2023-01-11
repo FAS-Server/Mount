@@ -85,15 +85,18 @@ class MountableServer:
         """
 
         def get_button() -> RTextBase:
-            error_button = RText("[?]", color=RColor.red).h(rtr("button.error.hover"))
+            error_button = RText("[?]", color=RColor.red).h(
+                rtr("button.error.hover"))
             mount_button = RText("[▷]")
             reset_button = RText("[↻]", color=RColor.yellow).h(rtr("button.reset.hover")).c(RAction.suggest_command,
-                                                                                            COMMAND_PREFIX + " -reset")
+                                                                                            COMMAND_PREFIX + " --reset")
             if self.server_path == current_mount and mount_name == self.occupied_by:
                 if self.reset_path in ["", None, '.']:
-                    reset_button.set_color(RColor.gray).h(rtr("list.reset_btn.unusable"))
+                    reset_button.set_color(RColor.gray).h(
+                        rtr("list.reset_btn.unusable"))
                 else:
-                    reset_button.set_color(RColor.green).h(rtr("list.reset_btn.reset"))
+                    reset_button.set_color(RColor.green).h(
+                        rtr("list.reset_btn.reset"))
                 return reset_button
             elif not self._config.checked:
                 return mount_button.set_color(RColor.gray).h(rtr('list.mount_btn.uncheck'))
@@ -108,11 +111,13 @@ class MountableServer:
 
         def get_path():
             path_text = RText(self.name).h(rtr("list.hover_on_name")) \
-                .c(RAction.suggest_command, f"{COMMAND_PREFIX} -config {self.server_path}")
+                .c(RAction.suggest_command, f"{COMMAND_PREFIX} --config {self.server_path}")
             if not self._config.checked:
-                path_text.set_color(RColor.gray).set_styles(RStyle.strikethrough)
+                path_text.set_color(RColor.gray).set_styles(
+                    RStyle.strikethrough)
             elif self.server_path == current_mount and mount_name == self.occupied_by:
-                path_text.set_color(RColor.light_purple).set_styles(RStyle.bold)
+                path_text.set_color(
+                    RColor.light_purple).set_styles(RStyle.bold)
             elif self.occupied_by in ["", None]:
                 path_text.set_color(RColor.green)
             else:

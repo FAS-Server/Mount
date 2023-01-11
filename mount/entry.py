@@ -22,7 +22,8 @@ def on_load(server: PluginServerInterface, prev_module):
     manager = MountManager(config=config)
     register_commands(server, manager)
     if config.welcome_player:
-        server.register_event_listener(event='mcdr.player_joined', callback=welcome)
+        server.register_event_listener(
+            event='mcdr.player_joined', callback=welcome)
 
 
 def on_unload(server: PluginServerInterface):

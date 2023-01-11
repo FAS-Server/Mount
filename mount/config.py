@@ -12,13 +12,15 @@ class MountConfig(Serializable):
     overwrite_path: str = "../servers/server.properties.overwrite"
 
     # available mc servers for this MCDR instance, should be same with the dirname of that server
-    available_servers: List[str] = ["servers/Parkour", "servers/PVP", "servers/Bingo"]
+    available_servers: List[str] = [
+        "servers/Parkour", "servers/PVP", "servers/Bingo"]
 
     current_server: str = "servers/Parkour"
     mount_name: str = "MountDemo"
 
     def save(self):
-        psi.save_config_simple(config=self, file_name=CONFIG_NAME, in_data_folder=False)
+        psi.save_config_simple(
+            config=self, file_name=CONFIG_NAME, in_data_folder=False)
 
 
 class MountableMCServerConfig(Serializable):
