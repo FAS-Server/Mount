@@ -7,7 +7,7 @@ from typing import Optional, Callable
 
 from jproperties import Properties
 
-from .MountableServer import MountableServer
+from .MountSlot import MountSlot
 from .config import MountConfig, SlotConfig
 from mcdreforged.api.types import CommandSource
 from mcdreforged.api.decorator import new_thread
@@ -93,7 +93,7 @@ class MountManager:
         self.configurable_things = None
         self.__abort_mount = None
         self._config = config
-        self.current_slot: Optional[MountableServer] = MountableServer(self._config.current_server)
+        self.current_slot: Optional[MountSlot] = MountSlot(self._config.current_server)
         try:
             self.current_slot.lock(self._config.mount_name)
         except ResourceWarning:
@@ -101,8 +101,7 @@ class MountManager:
             psi.set_exit_after_stop_flag()
             psi.stop()
             return
-        self.future_slot: Optional[MountableServer] = None
-        self.operation_callback: Optional[Callable] = None
+        self.next_slot: Optional[MountSlot] = None
 
     def reload(self, src: CommandSource):
         self.detect_servers(src)
@@ -178,7 +177,7 @@ class MountManager:
         self._config.save()
 
     @new_thread("mount-patch_properties")
-    def patch_properties(self, slot: MountableServer):
+    def patch_properties(self, slot: MountSlot):
         if self._config.overwrite_path in ['', '.', None]:
             return
         psi.logger.info("Patching properties file...")
@@ -195,11 +194,11 @@ class MountManager:
         slot.save_properties()
 
     @new_thread("mount-patch_mcdr_config")
-    def patch_mcdr_config(self, slot: MountableServer):
+    def patch_mcdr_config(self, slot: MountSlot):
         with open("config.yml", "r", encoding="utf-8") as f:
             mcdr_config = yaml.safe_load(f)
 
-        mcdr_config['working_directory'] = slot.server_path
+        mcdr_config['working_directory'] = slot.path
         mcdr_config['start_command'] = slot.start_command
         mcdr_config['handler'] = slot.handler
         if self.current_slot.plg_dir not in ['', None, '.']:
@@ -221,7 +220,7 @@ class MountManager:
         global current_op
         psi.logger.debug("Received mount request, evaluating...")
 
-        if path == self.current_slot.server_path:
+        if path == self.current_slot.path:
             source.reply(rtr('error.is_current_mount'))
             return
 
@@ -241,23 +240,23 @@ class MountManager:
             source.reply(rtr('error.init_mountable_config'))
             return
 
-        future_slot = MountableServer(path)
-        if not future_slot.checked:
+        next_slot = MountSlot(path)
+        if not next_slot.checked:
             source.reply(rtr('error.unchecked_path'))
             return
 
         try:
-            future_slot.lock(self._config.mount_name)
-            self.future_slot = future_slot
+            next_slot.lock(self._config.mount_name)
+            self.next_slot = next_slot
         except ResourceWarning:
             source.reply(rtr("error.occupied"))
-            self.future_slot.release(self._config.mount_name)
-            self.future_slot = None
+            self.next_slot.release(self._config.mount_name)
+            self.next_slot = None
             return
 
         current_op = Operation.REQUEST_MOUNT
         text = RTextList(
-            RText(rtr("info.mount_request", server_path=self.future_slot.server_path), color=RColor.yellow),
+            RText(rtr("info.mount_request", server_path=self.next_slot.path), color=RColor.yellow),
             RText(rtr('info.confirm'), color=RColor.green)
                 .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
             ' ',
@@ -271,7 +270,7 @@ class MountManager:
         # check for operation here
         if self.current_slot.reset_path in ['', None, '.'] \
                 or not os.path.isdir(
-                os.path.join(self.current_slot.server_path, self.current_slot.reset_path)):
+                os.path.join(self.current_slot.path, self.current_slot.reset_path)):
             source.reply(rtr('error.reset.invalid_path'))
             return
         if self.current_slot.reset_type not in ['full', 'region']:
@@ -291,27 +290,27 @@ class MountManager:
         if current_op is Operation.REQUEST_RESET:
             self._do_reset(source, self.current_slot)
         elif current_op is Operation.REQUEST_MOUNT:
-            if not isinstance(self.future_slot, MountableServer):
+            if not isinstance(self.next_slot, MountSlot):
                 source.reply(rtr('error.nothing_to_confirm'))
             else:
-                self._do_mount(source, self.future_slot)
+                self._do_mount(source, self.next_slot)
 
     @new_thread('mount-resetting')
     @single_op(Operation.RESET)
     @need_restart(reason=rtr('info.countdown_reason.reset'))
-    def _do_reset(self, source: CommandSource, slot: MountableServer):
+    def _do_reset(self, source: CommandSource, slot: MountSlot):
         global current_op
         current_op = Operation.RESET
         reserve_dirs = ['playerdata', 'advancements', 'stats']
         worlds = ['world', 'world_nether', 'world_the_end']
         reset_worlds = filter(lambda x: os.path.isdir(x),
-                              map(lambda x: os.path.join(slot.server_path, slot.reset_path, x), worlds))
+                              map(lambda x: os.path.join(slot.path, slot.reset_path, x), worlds))
         curr_worlds = filter(lambda x: os.path.isdir(x),
-                             map(lambda x: os.path.join(slot.server_path, x), worlds))
+                             map(lambda x: os.path.join(slot.path, x), worlds))
 
         # reset main world (maybe the only world)
-        curr_main_world = os.path.join(slot.server_path, 'world')
-        reset_main_world = os.path.join(slot.server_path, slot.reset_path, 'world')
+        curr_main_world = os.path.join(slot.path, 'world')
+        reset_main_world = os.path.join(slot.path, slot.reset_path, 'world')
         if curr_main_world not in curr_worlds:
             pass
         elif slot.reset_type == 'region':
@@ -343,8 +342,8 @@ class MountManager:
             shutil.copytree(reset_main_world, curr_main_world)
 
         for i in worlds[1:]:
-            dir1 = os.path.join(slot.server_path, i)
-            dir2 = os.path.join(slot.server_path, slot.reset_path, i)
+            dir1 = os.path.join(slot.path, i)
+            dir2 = os.path.join(slot.path, slot.reset_path, i)
             if dir1 in curr_worlds:
                 psi.logger.info(f'Deleting {i}')
                 shutil.rmtree(dir1)
@@ -355,15 +354,15 @@ class MountManager:
     @new_thread("mount-mounting")
     @single_op(Operation.MOUNT)
     @need_restart(reason=rtr('info.countdown_reason.mount'))
-    def _do_mount(self, source: CommandSource, slot: MountableServer):
+    def _do_mount(self, source: CommandSource, slot: MountSlot):
         global current_op
         # do the mount
         current_op = Operation.MOUNT
         self.patch_properties(slot)
         self.patch_mcdr_config(slot)
         self.current_slot.release(self._config.mount_name)
-        self.current_slot, self.future_slot = slot, None
-        self._config.current_server = slot.server_path
+        self.current_slot, self.next_slot = slot, None
+        self._config.current_server = slot.path
         self._config.save()
         psi.execute_command("!!MCDR reload config")
         # psi.execute_command("!!MCDR reload all")
@@ -372,22 +371,22 @@ class MountManager:
     def abort_operation(self, source: CommandSource):
         global current_op
         current_op = Operation.IDLE
-        if not isinstance(self.future_slot, MountableServer):
+        if not isinstance(self.next_slot, MountSlot):
             source.reply(rtr("error.nothing_to_abort"))
             return
         if current_op is Operation.REQUEST_MOUNT:
-            self.future_slot.release(self._config.mount_name)
-        self.future_slot = None
+            self.next_slot.release(self._config.mount_name)
+        self.next_slot = None
 
     @new_thread('mount-list')
     def list_servers(self, src: CommandSource):
         src.reply(RText(rtr('list.title')))
         for server in self._config.available_servers:
-            instance = MountableServer(path=server)
+            slot = MountSlot(path=server)
             src.reply(
-                instance
+                slot
                     .get_config()
-                    .as_list_entry(instance.name, instance.server_path,
+                    .as_list_entry(slot.name, slot.path,
                         self._config.mount_name, self._config.current_server
                 ))
 
@@ -405,12 +404,12 @@ class MountManager:
 
     @staticmethod
     def list_path_config(src: CommandSource, path: str):
-        slot_instance = MountableServer(path)
+        slot_instance = MountSlot(path)
         src.reply(slot_instance.get_config().display(path))
         del slot_instance
 
     def edit_path_config(self, src, path: CommandSource, key: str, value):
-        slot_instance = MountableServer(path)
+        slot_instance = MountSlot(path)
         src.reply(slot_instance.edit_config(key, value))
         self.current_slot.load_config()
         del slot_instance

@@ -9,9 +9,9 @@ from mcdreforged.api.rtext import RTextList, RAction, RText, RColor, RTextBase, 
 from .utils import rtr, psi
 
 
-class MountableServer:
+class MountSlot:
     def __init__(self, path):
-        self.server_path = path
+        self.path = path
         self.load_config()
         self.properties = Properties()
         self.load_properties()
@@ -19,26 +19,26 @@ class MountableServer:
 
     @property
     def name(self):
-        return os.path.basename(os.path.normpath(self.server_path))
+        return os.path.basename(os.path.normpath(self.path))
 
     @property
     def plg_dir(self):
         if self._config.plugin_dir in ['', '.', None]:
             return ''
         else:
-            return os.path.join(self.server_path, self._config.plugin_dir)
+            return os.path.join(self.path, self._config.plugin_dir)
 
     def load_config(self):
         self._config = psi.load_config_simple(
             target_class=Config,
-            file_name=os.path.join(self.server_path, MOUNTABLE_CONFIG),
+            file_name=os.path.join(self.path, MOUNTABLE_CONFIG),
             in_data_folder=False
         )
 
     def save_config(self):
         psi.save_config_simple(
             config=self._config,
-            file_name=os.path.join(self.server_path, MOUNTABLE_CONFIG),
+            file_name=os.path.join(self.path, MOUNTABLE_CONFIG),
             in_data_folder=False
         )
 
@@ -52,13 +52,13 @@ class MountableServer:
 
     def load_properties(self):
         try:
-            with open(os.path.join(self.server_path, 'server.properties'), 'rb') as f:
+            with open(os.path.join(self.path, 'server.properties'), 'rb') as f:
                 self.properties.load(f, 'utf-8')
         except FileNotFoundError:
-            psi.logger.error(f'No properties file in {self.server_path}!')
+            psi.logger.error(f'No properties file in {self.path}!')
 
     def save_properties(self):
-        with open(os.path.join(self.server_path, 'server.properties'), 'wb') as f:
+        with open(os.path.join(self.path, 'server.properties'), 'wb') as f:
             self.properties.store(f, encoding='utf-8')
 
     def lock(self, mount_name: str):
