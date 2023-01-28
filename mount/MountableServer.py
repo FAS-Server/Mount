@@ -2,7 +2,7 @@ import os
 from threading import Lock
 
 from jproperties import Properties
-from .config import MountableMCServerConfig as Config
+from .config import SlotConfig as Config
 from .constants import MOUNTABLE_CONFIG, COMMAND_PREFIX
 from mcdreforged.api.rtext import RTextList, RAction, RText, RColor, RTextBase, RStyle
 
@@ -12,11 +12,7 @@ from .utils import rtr, psi
 class MountableServer:
     def __init__(self, path):
         self.server_path = path
-        self._config: Config = psi.load_config_simple(
-            target_class=Config,
-            file_name=os.path.join(path, MOUNTABLE_CONFIG),
-            in_data_folder=False
-        )
+        self.load_config()
         self.properties = Properties()
         self.load_properties()
         self.slot_lock = Lock()
@@ -45,6 +41,9 @@ class MountableServer:
             file_name=os.path.join(self.server_path, MOUNTABLE_CONFIG),
             in_data_folder=False
         )
+
+    def get_config(self) -> Config:
+        return self._config
 
     def __getattr__(self, item):
         if hasattr(self._config, item):
@@ -131,27 +130,6 @@ class MountableServer:
             ' ',
             RText(self.desc)
         )
-
-    def show_config(self):
-        conf_list = self._config.get_annotations_fields()
-
-        def get_config_text(config_key: str):
-            config_value = self._config.__getattribute__(config_key)
-            suggested_value = config_value
-            if config_value in ['', None, '.']:
-                config_value = rtr('config.empty')
-            elif isinstance(config_value, bool):
-                suggested_value = not config_value
-                config_value = rtr(f'config.bool.{config_value}')
-            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
-                .h(rtr(f'config.hover', key=config_key)) \
-                .c(RAction.suggest_command,
-                   f'{COMMAND_PREFIX} -config {self.server_path} set {config_key} {suggested_value}')
-
-        payload = RTextList()
-        for key in conf_list:
-            payload.append(get_config_text(key))
-        return payload
 
     def edit_config(self, key: str, value: str):
         if isinstance(self._config.__getattribute__(key), bool):

@@ -8,7 +8,7 @@ from typing import Optional, Callable
 from jproperties import Properties
 
 from .MountableServer import MountableServer
-from .config import MountConfig, MountableMCServerConfig
+from .config import MountConfig, SlotConfig
 from mcdreforged.api.types import CommandSource
 from mcdreforged.api.decorator import new_thread
 from mcdreforged.api.rtext import RTextList, RAction, RText, RColor, RTextBase
@@ -31,9 +31,15 @@ current_op = Operation.IDLE
 
 
 def single_op(op_type: Operation):
+    """
+    Used to avoid operation conflict
+    """
     def wrapper(func: Callable):
         @functools.wraps(func)
         def wrap(manager, src: CommandSource, *args, **kwargs):
+            # allowed operation flow:
+            # IDLE -> REQUEST_RESET -> RESET / IDLE
+            # IDLE -> REQUEST_MOUNT -> MOUNT / IDLE
             with _operation_lock:
                 global current_op
                 allow = False
@@ -57,6 +63,9 @@ def single_op(op_type: Operation):
 
 
 def need_restart(reason: RTextBase):
+    """
+    Stop server, execute the function, and then restart server and reload plugin
+    """
     def wrapper(func: Callable):
         @functools.wraps(func)
         def wrap(*args, **kwargs):
@@ -112,7 +121,10 @@ class MountManager:
         auto-detect servers in target folder
         you can add a file named '.mount-ignore' to ignore that folder
         """
-        def is_ignored(path: str):
+        def is_ignored(path: str) -> bool:
+            """
+            check if the given path should be ignored
+            """
             return os.path.isfile(os.path.join(path, IGNORE_PATTEN))
 
         self._config = psi.load_config_simple(
@@ -142,7 +154,7 @@ class MountManager:
 
         def init_conf(path: str):
             file_list = filter(lambda _: os.path.isfile(os.path.join(path, _)), os.listdir(path))
-            conf = MountableMCServerConfig(checked=False, start_command=default_script, handler=default_handler)
+            conf = SlotConfig(checked=False, start_command=default_script, handler=default_handler)
             for file in file_list:
                 if file[:5] == 'paper' and file[-4:] == '.jar':
                     conf.handler = 'bukkit_handler'
@@ -223,7 +235,7 @@ class MountManager:
 
         mountable_conf_path = os.path.join(path, MOUNTABLE_CONFIG)
         if not os.path.isfile(mountable_conf_path):
-            psi.save_config_simple(config=MountableMCServerConfig(),
+            psi.save_config_simple(config=SlotConfig(),
                                    file_name=mountable_conf_path,
                                    in_data_folder=False)
             source.reply(rtr('error.init_mountable_config'))
@@ -393,7 +405,7 @@ class MountManager:
     @staticmethod
     def list_path_config(src: CommandSource, path: str):
         slot_instance = MountableServer(path)
-        src.reply(slot_instance.show_config())
+        src.reply(slot_instance.get_config().display(path))
         del slot_instance
 
     def edit_path_config(self, src, path: CommandSource, key: str, value):

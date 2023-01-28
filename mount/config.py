@@ -1,8 +1,9 @@
 from typing import List
 
 from mcdreforged.api.utils import Serializable
-from .utils import psi
-from .constants import CONFIG_NAME
+from mcdreforged.api.rtext import RText, RAction, RTextList
+from .utils import psi, rtr
+from .constants import COMMAND_PREFIX, CONFIG_NAME
 
 
 class MountConfig(Serializable):
@@ -23,7 +24,7 @@ class MountConfig(Serializable):
             config=self, file_name=CONFIG_NAME, in_data_folder=False)
 
 
-class MountableMCServerConfig(Serializable):
+class SlotConfig(Serializable):
     checked: bool = False
     desc: str = "Demo server"
     start_command: str = "./start.sh"
@@ -37,3 +38,24 @@ class MountableMCServerConfig(Serializable):
 
     # mcdr plugin path for specific plugin, empty for disable, should be relative to mc server path
     plugin_dir: str = ""
+
+    def display(self, server_path: str):
+        conf_list = self.get_annotations_fields()
+
+        def get_config_text(config_key: str):
+            config_value = self.__getattribute__(config_key)
+            suggested_value = config_value
+            if config_value in ['', None, '.']:
+                config_value = rtr('config.empty')
+            elif isinstance(config_value, bool):
+                suggested_value = not config_value
+                config_value = rtr(f'config.bool.{config_value}')
+            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
+                .h(rtr(f'config.hover', key=config_key)) \
+                .c(RAction.suggest_command,
+                   f'{COMMAND_PREFIX} -config {server_path} set {config_key} {suggested_value}')
+
+        payload = RTextList()
+        for key in conf_list:
+            payload.append(get_config_text(key))
+        return payload

@@ -5,7 +5,7 @@ from mcdreforged.api.rtext import RTextList, RText, RAction, RColor
 from .MountManager import MountManager
 from .constants import COMMAND_PREFIX
 from .utils import rtr
-from .config import MountableMCServerConfig
+from .config import SlotConfig
 
 
 def get_clickable(cmd: str):
@@ -59,7 +59,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
         get_slot_node().runs(
             lambda src, ctx: manager.list_path_config(src, ctx['slot_path']))
         .then(Literal('set').then(Text('key').requires(
-            lambda src, ctx: ctx['key'] in MountableMCServerConfig.get_annotations_fields(
+            lambda src, ctx: ctx['key'] in SlotConfig.get_annotations_fields(
             ),
             lambda src, ctx: rtr('config.invalid_key', key=ctx['key']))
             .then(GreedyText('value').runs(
