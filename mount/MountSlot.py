@@ -2,11 +2,10 @@ import os
 from threading import Lock
 
 from jproperties import Properties
-from .config import SlotConfig as Config
-from .constants import MOUNTABLE_CONFIG, COMMAND_PREFIX
-from mcdreforged.api.rtext import RTextList, RAction, RText, RColor, RTextBase, RStyle
 
-from .utils import rtr, psi
+from .config import SlotConfig as Config
+from .constants import MOUNTABLE_CONFIG
+from .utils import psi, rtr
 
 
 class MountSlot:

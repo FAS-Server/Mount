@@ -1,11 +1,11 @@
-from mcdreforged.api.command import Literal, Text, GreedyText
-from mcdreforged.api.types import PluginServerInterface, CommandSource
-from mcdreforged.api.rtext import RTextList, RText, RAction, RColor
+from mcdreforged.api.command import GreedyText, Literal, Text
+from mcdreforged.api.rtext import RAction, RColor, RText, RTextList
+from mcdreforged.api.types import CommandSource, PluginServerInterface
 
-from .MountManager import MountManager
-from .constants import COMMAND_PREFIX
-from .utils import rtr
 from .config import SlotConfig
+from .constants import COMMAND_PREFIX
+from .MountManager import MountManager
+from .utils import rtr
 
 
 def get_clickable(cmd: str):

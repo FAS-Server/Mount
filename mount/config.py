@@ -1,9 +1,10 @@
 from typing import List
 
-from mcdreforged.api.utils import Serializable
 from mcdreforged.api.rtext import *
-from .utils import psi, rtr
+from mcdreforged.api.utils import Serializable
+
 from .constants import COMMAND_PREFIX, CONFIG_NAME
+from .utils import psi, rtr
 
 
 class MountConfig(Serializable):
