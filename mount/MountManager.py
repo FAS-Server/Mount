@@ -385,9 +385,10 @@ class MountManager:
         for server in self._config.available_servers:
             instance = MountableServer(path=server)
             src.reply(
-                instance.as_list_entry(
-                    mount_name=self._config.mount_name,
-                    current_mount=self._config.current_server
+                instance
+                    .get_config()
+                    .as_list_entry(instance.name, instance.server_path,
+                        self._config.mount_name, self._config.current_server
                 ))
 
     def get_config(self, config_key, src: Optional[CommandSource] = None):

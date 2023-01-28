@@ -78,59 +78,6 @@ class MountableServer:
             self.save_config()
         self.slot_lock.release()
 
-    def as_list_entry(self, mount_name: str, current_mount: str):
-        """
-        - path [↻] <desc_short>
-        """
-
-        def get_button() -> RTextBase:
-            error_button = RText("[?]", color=RColor.red).h(
-                rtr("button.error.hover"))
-            mount_button = RText("[▷]")
-            reset_button = RText("[↻]", color=RColor.yellow).h(rtr("button.reset.hover")).c(RAction.suggest_command,
-                                                                                            COMMAND_PREFIX + " --reset")
-            if self.server_path == current_mount and mount_name == self.occupied_by:
-                if self.reset_path in ["", None, '.']:
-                    reset_button.set_color(RColor.gray).h(
-                        rtr("list.reset_btn.unusable"))
-                else:
-                    reset_button.set_color(RColor.green).h(
-                        rtr("list.reset_btn.reset"))
-                return reset_button
-            elif not self._config.checked:
-                return mount_button.set_color(RColor.gray).h(rtr('list.mount_btn.uncheck'))
-            elif self.occupied_by in [None, ""]:
-                return mount_button.h(rtr("list.mount_btn.normal", server_name=self.server_path)) \
-                    .set_color(RColor.green).c(RAction.suggest_command, COMMAND_PREFIX + " " + self.server_path)
-            elif self.occupied_by != mount_name and self.server_path != current_mount:
-                return mount_button.set_color(RColor.gray).h(
-                    rtr("list.mount_btn.occupied", occupied_by=self._config.occupied_by))
-            else:
-                return error_button
-
-        def get_path():
-            path_text = RText(self.name).h(rtr("list.hover_on_name")) \
-                .c(RAction.suggest_command, f"{COMMAND_PREFIX} --config {self.server_path}")
-            if not self._config.checked:
-                path_text.set_color(RColor.gray).set_styles(
-                    RStyle.strikethrough)
-            elif self.server_path == current_mount and mount_name == self.occupied_by:
-                path_text.set_color(
-                    RColor.light_purple).set_styles(RStyle.bold)
-            elif self.occupied_by in ["", None]:
-                path_text.set_color(RColor.green)
-            else:
-                path_text.set_color(RColor.red)
-            return path_text
-
-        return RTextList(
-            get_button(),
-            ' ',
-            get_path(),
-            ' ',
-            RText(self.desc)
-        )
-
     def edit_config(self, key: str, value: str):
         if isinstance(self._config.__getattribute__(key), bool):
             value = value.lower()
