@@ -51,20 +51,20 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
         'short_prefix') else COMMAND_PREFIX
 
     def get_slot_node():  # to check if is a usable slot
-        return Text('slot_path').requires(lambda src, ctx: ctx['slot_path'] in manager.servers_as_list,
-                                          lambda src, ctx: rtr('error.invalid_mount_path'))
+        return Text('slot_name').requires(lambda src, ctx: ctx['slot_name'] in manager.slots.keys,
+                                          lambda src, ctx: rtr('error.invalid_mount_name'))
 
     config_node = Literal({"--config", "-cfg"}).runs(lambda src: get_config_help(src))\
         .requires(lambda src: src.has_permission(3), lambda src: src.reply(rtr('error.perm_deny'))).then(
         get_slot_node().runs(
-            lambda src, ctx: manager.list_path_config(src, ctx['slot_path']))
+            lambda src, ctx: manager.list_path_config(src, ctx['slot_name']))
         .then(Literal('set').then(Text('key').requires(
             lambda src, ctx: ctx['key'] in SlotConfig.get_annotations_fields(
             ),
             lambda src, ctx: rtr('config.invalid_key', key=ctx['key']))
             .then(GreedyText('value').runs(
                 lambda src, ctx: manager.edit_path_config(
-                    src, ctx['slot_path'], ctx['key'], ctx['value'])
+                    src, ctx['slot_name'], ctx['key'], ctx['value'])
             )))))
     main_node = Literal(root_prefix).runs(
         lambda src: get_help(src)
@@ -85,10 +85,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         get_slot_node().runs(
             lambda src, ctx: manager.request_mount(
-                src, ctx['slot_path'], with_confirm=False)
-        ).then(
-            Literal("--confirm")
-            .runs(lambda src, ctx: manager.request_mount(src, ctx['slot_path'], with_confirm=True))
+                src, ctx['slot_name'], with_confirm=False)
         )
     )
     server.register_command(main_node)

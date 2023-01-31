@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from mcdreforged.api.rtext import *
 from mcdreforged.api.utils import Serializable
@@ -12,10 +12,9 @@ class MountConfig(Serializable):
     short_prefix = True  # let !!m to be a short command
     servers_path: str = "../servers"
     overwrite_path: str = "../servers/server.properties.overwrite"
-
-    # available mc servers for this MCDR instance, should be same with the dirname of that server
-    available_servers: List[str] = [
-        "servers/Parkour", "servers/PVP", "servers/Bingo"]
+    # slot name -> slot path
+    # you can define different slot name in different mount executor
+    slots: Dict[str, str] = []
 
     current_server: str = "servers/Parkour"
     mount_name: str = "MountDemo"
@@ -26,6 +25,7 @@ class MountConfig(Serializable):
 
 
 class SlotConfig(Serializable):
+    name: str = "Slot"
     checked: bool = False
     desc: str = "Demo server"
     start_command: str = "./start.sh"

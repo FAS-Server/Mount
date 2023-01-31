@@ -108,12 +108,11 @@ class MountManager:
         psi.reload_plugin(psi.get_self_metadata().id)
 
     @property
-    def servers_as_list(self):
+    def slots(self):
         """
-        get the list of available servers
-        :return: the list of available servers
+        all available slots
         """
-        return self._config.available_servers
+        return self._config.slots
 
     def detect_servers(self, src: CommandSource):
         """
@@ -135,21 +134,27 @@ class MountManager:
 
         default_script = script_map[os.name] if os.name in script_map else './start.sh'
         default_handler = 'vanilla_handler'
+        
+        """
+        List out dirname in configured path
+        Map to add path prefix for dirname
+        Filter to remove files
+        Convert to List
+        """
         dirs = list(filter(lambda x: os.path.isdir(x), map(lambda _: os.path.join(self._config.servers_path, _),
                                                            os.listdir(self._config.servers_path))))
-        index = 0
-        while index < len(self._config.available_servers):
-            server_path = self._config.available_servers[index]
-            if server_path not in dirs:
-                self._config.available_servers.pop(index)
-            elif is_ignored(server_path) and self._config.current_server != server_path:
-                self._config.available_servers.pop(index)
-            else:
-                index += 1
+
+        prev_slots_name = self.slots.keys
+        for slot_name in prev_slots_name:
+            slot_path = self.slots[slot_name]
+            if is_ignored(slot_path) and self._config.current_server != slot_path:
+                self._config.pop(slot_name)
+            elif os.path.pardir(slot_path) == self._config.servers_path and slot_path not in dirs:
+                self._config.pop(slot_name)
 
         def is_valid_folder(path: str):
             return not os.path.isfile(os.path.join(path, IGNORE_PATTEN)) \
-                   and path not in self._config.available_servers
+                   and path not in self.slots.values
 
         def init_conf(path: str):
             file_list = filter(lambda _: os.path.isfile(os.path.join(path, _)), os.listdir(path))
@@ -164,9 +169,11 @@ class MountManager:
                 in_data_folder=False)
             src.reply(rtr('detect.init_conf', path=path))
 
+        slot_cnt = len(self.slots)
         dirs = list(filter(is_valid_folder, dirs))
         for server_dir in dirs:
-            self._config.available_servers.append(server_dir)
+            slot_cnt += 1
+            self._config.slots[f"Slot{slot_cnt}"] = server_dir
             src.reply(rtr('detect.detected', path=server_dir))
             if not os.path.isfile(os.path.join(server_dir, MOUNTABLE_CONFIG)):
                 init_conf(server_dir)
@@ -216,23 +223,25 @@ class MountManager:
         pass
 
     @single_op(Operation.REQUEST_MOUNT)
-    def request_mount(self, source: CommandSource, path: str, with_confirm: bool = False):
+    def request_mount(self, source: CommandSource, slot_name: str):
         global current_op
         psi.logger.debug("Received mount request, evaluating...")
 
-        if path == self.current_slot.path:
+        try:
+            slot_path = self.slots[slot_name]
+        except KeyError:
             source.reply(rtr('error.is_current_mount'))
             return
 
-        if path not in self._config.available_servers:
-            source.reply(rtr('error.unknown_mount_path'))
+        if slot_path == self.current_slot.path:
+            source.reply(rtr('error.is_current_mount'))
             return
 
-        if not os.path.isdir(path):
+        if not os.path.isdir(slot_path):
             source.reply(rtr('error.invalid_mount_path'))
             return
 
-        mountable_conf_path = os.path.join(path, MOUNTABLE_CONFIG)
+        mountable_conf_path = os.path.join(slot_path, MOUNTABLE_CONFIG)
         if not os.path.isfile(mountable_conf_path):
             psi.save_config_simple(config=SlotConfig(),
                                    file_name=mountable_conf_path,
@@ -240,7 +249,7 @@ class MountManager:
             source.reply(rtr('error.init_mountable_config'))
             return
 
-        next_slot = MountSlot(path)
+        next_slot = MountSlot(slot_path)
         if not next_slot.checked:
             source.reply(rtr('error.unchecked_path'))
             return
@@ -381,14 +390,14 @@ class MountManager:
     @new_thread('mount-list')
     def list_servers(self, src: CommandSource):
         src.reply(RText(rtr('list.title')))
-        for server in self._config.available_servers:
-            slot = MountSlot(path=server)
+        for slot_name in self.slots.keys:
+            slot_path = self.slots[slot_name]
+            slot = MountSlot(path=slot_path)
             src.reply(
-                slot
-                    .get_config()
+                slot.get_config()
                     .as_list_entry(slot.name, slot.path,
-                        self._config.mount_name, self._config.current_server
-                ))
+                    self._config.mount_name, self._config.current_server
+            ))
 
     def get_config(self, config_key, src: Optional[CommandSource] = None):
         if src is not None:
@@ -402,14 +411,15 @@ class MountManager:
         self._config.save()
         src.reply(rtr("info.setup_config", config_key, config_value))
 
-    @staticmethod
-    def list_path_config(src: CommandSource, path: str):
-        slot_instance = MountSlot(path)
-        src.reply(slot_instance.get_config().display(path))
+    def list_path_config(self, src: CommandSource, slot_name: str):
+        slot_path = self.slots[slot_name]
+        slot_instance = MountSlot(slot_path)
+        src.reply(slot_instance.get_config().display(slot_path))
         del slot_instance
 
-    def edit_path_config(self, src, path: CommandSource, key: str, value):
-        slot_instance = MountSlot(path)
+    def edit_path_config(self, src: CommandSource, slot_name: str, key: str, value):
+        slot_path = self.slots[slot_name]
+        slot_instance = MountSlot(slot_path)
         src.reply(slot_instance.edit_config(key, value))
         self.current_slot.load_config()
         del slot_instance
