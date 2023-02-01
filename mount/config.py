@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict
 
 from mcdreforged.api.rtext import *
 from mcdreforged.api.utils import Serializable
@@ -16,8 +16,8 @@ class MountConfig(Serializable):
     # you can define different slot name in different mount executor
     slots: Dict[str, str] = []
 
-    current_server: str = "servers/Parkour"
-    mount_name: str = "MountDemo"
+    current_slot: str = "servers/Parkour"
+    mount_flag: str = "MountDemo"
 
     def save(self):
         psi.save_config_simple(
@@ -31,13 +31,13 @@ class SlotConfig(Serializable):
     start_command: str = "./start.sh"
     handler: str = "vanilla_handler"
 
-    # where this server is occupied by another mcdr instance
+    # whether this slot is occupied by another mount executor
     occupied_by: str = ""
-    # backup path for reset, empty for disable, should be relative to mc server path
+    # backup path for reset, empty for disable, should be relative to slot path
     reset_path: str = ""
     reset_type: str = "full"
 
-    # mcdr plugin path for specific plugin, empty for disable, should be relative to mc server path
+    # mcdr plugin path for specific plugin, empty for disable, should be relative to slot path
     plugin_dir: str = ""
 
     def display(self, server_path: str):

@@ -93,9 +93,9 @@ class MountManager:
         self.configurable_things = None
         self.__abort_mount = None
         self._config = config
-        self.current_slot: Optional[MountSlot] = MountSlot(self._config.current_server)
+        self.current_slot: Optional[MountSlot] = MountSlot(self._config.current_slot)
         try:
-            self.current_slot.lock(self._config.mount_name)
+            self.current_slot.lock(self._config.mount_flag)
         except ResourceWarning:
             psi.logger.error("Current server is already mounted, stopping mcdr...")
             psi.set_exit_after_stop_flag()
@@ -147,7 +147,7 @@ class MountManager:
         prev_slots_name = self.slots.keys
         for slot_name in prev_slots_name:
             slot_path = self.slots[slot_name]
-            if is_ignored(slot_path) and self._config.current_server != slot_path:
+            if is_ignored(slot_path) and self._config.current_slot != slot_path:
                 self._config.pop(slot_name)
             elif os.path.pardir(slot_path) == self._config.servers_path and slot_path not in dirs:
                 self._config.pop(slot_name)
@@ -255,11 +255,11 @@ class MountManager:
             return
 
         try:
-            next_slot.lock(self._config.mount_name)
+            next_slot.lock(self._config.mount_flag)
             self.next_slot = next_slot
         except ResourceWarning:
             source.reply(rtr("error.occupied"))
-            self.next_slot.release(self._config.mount_name)
+            self.next_slot.release(self._config.mount_flag)
             self.next_slot = None
             return
 
@@ -369,9 +369,9 @@ class MountManager:
         current_op = Operation.MOUNT
         self.patch_properties(slot)
         self.patch_mcdr_config(slot)
-        self.current_slot.release(self._config.mount_name)
+        self.current_slot.release(self._config.mount_flag)
         self.current_slot, self.next_slot = slot, None
-        self._config.current_server = slot.path
+        self._config.current_slot = slot.path
         self._config.save()
         psi.execute_command("!!MCDR reload config")
         # psi.execute_command("!!MCDR reload all")
@@ -384,7 +384,7 @@ class MountManager:
             source.reply(rtr("error.nothing_to_abort"))
             return
         if current_op is Operation.REQUEST_MOUNT:
-            self.next_slot.release(self._config.mount_name)
+            self.next_slot.release(self._config.mount_flag)
         self.next_slot = None
 
     @new_thread('mount-list')
@@ -396,7 +396,7 @@ class MountManager:
             src.reply(
                 slot.get_config()
                     .as_list_entry(slot.name, slot.path,
-                    self._config.mount_name, self._config.current_server
+                    self._config.mount_flag, self._config.current_slot
             ))
 
     def get_config(self, config_key, src: Optional[CommandSource] = None):
