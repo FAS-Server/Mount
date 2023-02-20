@@ -135,14 +135,16 @@ class MountManager:
 
         default_script = script_map[os.name] if os.name in script_map else './start.sh'
         default_handler = 'vanilla_handler'
-        dirs = list(filter(lambda x: os.path.isdir(x), map(lambda _: os.path.join(self._config.servers_path, _),
-                                                           os.listdir(self._config.servers_path))))
+        dirs = []
+        for detect_path in self._config.servers_path:
+            raw_paths = os.listdir(detect_path)
+            real_paths = map(lambda p: os.path.join(detect_path, p), raw_paths)
+            valid_paths = filter(lambda p: os.path.isdir(p), real_paths)
+            dirs.extend(valid_paths)
         index = 0
         while index < len(self._config.available_servers):
             server_path = self._config.available_servers[index]
-            if server_path not in dirs:
-                self._config.available_servers.pop(index)
-            elif is_ignored(server_path) and self._config.current_server != server_path:
+            if is_ignored(server_path):
                 self._config.available_servers.pop(index)
             else:
                 index += 1

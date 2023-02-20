@@ -29,7 +29,7 @@
   // 是否启用 !!m 短指令
   short_prefix: true,
   // 自动检测挂载点时的目录
-  servers_path: "./servers",
+  servers_path: [ "./servers" ],
   // 重写挂载点的server.properties时使用的覆盖配置, 格式同server.properties,只添加需要覆盖的配置行即可
   overwrite_name: "../servers/server.properties.overwrite",
   // 当前可用的挂载点列表,

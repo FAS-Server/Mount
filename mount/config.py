@@ -10,7 +10,7 @@ from .utils import psi, rtr
 class MountConfig(Serializable):
     welcome_player: bool = True
     short_prefix = True  # let !!m to be a short command
-    servers_path: str = "../servers"
+    servers_path: List[str] = [ "../servers" ]
     overwrite_path: str = "../servers/server.properties.overwrite"
 
     # available mc servers for this MCDR instance, should be same with the dirname of that server

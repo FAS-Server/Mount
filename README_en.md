@@ -29,7 +29,7 @@
   // enable short command !!m
   short_prefix: true,
   // path used for auto-detect
-  servers_path: "./servers",
+  servers_path: [ "./servers" ],
   // file used to overwrite server.properties, same format with server.properties but add necessary configs only
   overwrite_name: "../servers/server.properties.overwrite",
   // available mount servers
