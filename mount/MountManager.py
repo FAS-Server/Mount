@@ -78,7 +78,7 @@ def need_restart(reason: RTextBase):
             func(*args, **kwargs)
             psi.start()
             current_op = Operation.IDLE
-            psi.execute_command('!!MCDR r plg')
+            psi.refresh_changed_plugins()
         return wrap
 
     return wrapper
@@ -367,7 +367,6 @@ class MountManager:
         self._config.current_server = slot.path
         self._config.save()
         psi.execute_command("!!MCDR reload config")
-        # psi.execute_command("!!MCDR reload all")
 
     @single_op(Operation.IDLE)
     def abort_operation(self, source: CommandSource):
