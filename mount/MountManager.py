@@ -260,7 +260,7 @@ class MountManager:
             RText(rtr('info.confirm'), color=RColor.green)
                 .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
             ' ',
-            RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} -abort')
+            RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} --abort')
         )
         source.reply(text)
 
@@ -282,7 +282,7 @@ class MountManager:
             RText(rtr('info.confirm'), color=RColor.green)
                 .c(RAction.suggest_command, f'{COMMAND_PREFIX} --confirm'),
             ' ',
-            RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} -abort')
+            RText(rtr('info.abort'), color=RColor.red).c(RAction.suggest_command, f'{COMMAND_PREFIX} --abort')
         )
         source.reply(text)
 
