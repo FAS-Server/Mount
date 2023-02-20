@@ -24,8 +24,3 @@ def on_load(server: PluginServerInterface, prev_module):
     if config.welcome_player:
         server.register_event_listener(
             event='mcdr.player_joined', callback=welcome)
-
-
-def on_unload(server: PluginServerInterface):
-    global manager
-    manager.abort_operation(server.get_plugin_command_source())
