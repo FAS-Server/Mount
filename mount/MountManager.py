@@ -42,15 +42,10 @@ def single_op(op_type: Operation):
             # IDLE -> REQUEST_MOUNT -> MOUNT / IDLE
             with _operation_lock:
                 global current_op
-                allow = False
-                if current_op is Operation.IDLE:
-                    allow = True
-                elif current_op is Operation.REQUEST_RESET and op_type is Operation.RESET:
-                    allow = True
-                elif current_op is Operation.REQUEST_MOUNT and op_type is Operation.MOUNT:
-                    allow = True
-                elif current_op in [Operation.REQUEST_RESET, Operation.REQUEST_MOUNT] and op_type is Operation.IDLE:
-                    allow = True
+                allow = current_op is Operation.IDLE \
+                    or (current_op is Operation.REQUEST_RESET and op_type is Operation.RESET) \
+                    or (current_op is Operation.REQUEST_MOUNT and op_type is Operation.MOUNT) \
+                    or (current_op in [Operation.REQUEST_RESET, Operation.REQUEST_MOUNT] and op_type is Operation.IDLE)
                 psi.logger.debug(f"Executing operation {op_type}, current operation {current_op}, allow = {allow}")
                 if allow:
                     func(manager, src, *args, **kwargs)
