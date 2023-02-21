@@ -23,6 +23,10 @@ class MountConfig(Serializable):
     def save(self):
         psi.save_config_simple(
             config=self, file_name=CONFIG_NAME, in_data_folder=False)
+    
+    @staticmethod
+    def load() -> 'MountConfig':
+        return psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
 
 
 class SlotConfig(Serializable):
