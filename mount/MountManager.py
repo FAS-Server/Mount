@@ -14,6 +14,7 @@ from mcdreforged.api.types import CommandSource
 
 from .config import MountConfig, SlotConfig
 from .constants import *
+from .detect_helper import DetectHelper
 from .MountSlot import MountSlot
 from .utils import psi, rtr
 
@@ -98,9 +99,28 @@ class MountManager:
             return
         self.next_slot: Optional[MountSlot] = None
 
+
     def reload(self, src: CommandSource):
-        self.detect_servers(src)
+        self._config = MountConfig.load()
+        
+        new_slots, removal_slots = DetectHelper.detect_slots(self._config.servers_path, self._config.available_servers)
+        
+        self._config.available_servers.extend(new_slots)
+        for slot in new_slots:
+            if not os.path.isfile(os.path.join(slot, MOUNTABLE_CONFIG)):
+                DetectHelper.init_conf(slot)
+                src.reply(rtr('detect.init_conf', path=slot))
+
+        for slot in removal_slots:
+            self._config.available_servers.remove(slot)
+
+        if len(new_slots) > 0:
+            src.reply(rtr('detect.summary', num=len(new_slots)))
+        else:
+            src.reply(rtr('detect.summary_empty'))
+        self._config.save()
         psi.reload_plugin(psi.get_self_metadata().id)
+
 
     @property
     def servers_as_list(self):
@@ -109,69 +129,6 @@ class MountManager:
         :return: the list of available servers
         """
         return self._config.available_servers
-
-    def detect_servers(self, src: CommandSource):
-        """
-        auto-detect servers in target folder
-        you can add a file named '.mount-ignore' to ignore that folder
-        """
-        def is_ignored(path: str) -> bool:
-            """
-            check if the given path should be ignored
-            """
-            return os.path.isfile(os.path.join(path, IGNORE_PATTEN))
-
-        self._config = psi.load_config_simple(
-            file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
-        script_map = {
-            'posix': './start.sh',
-            'nt': 'start.bat'
-        }
-
-        default_script = script_map[os.name] if os.name in script_map else './start.sh'
-        default_handler = 'vanilla_handler'
-        dirs = []
-        for detect_path in self._config.servers_path:
-            raw_paths = os.listdir(detect_path)
-            real_paths = map(lambda p: os.path.join(detect_path, p), raw_paths)
-            valid_paths = filter(lambda p: os.path.isdir(p), real_paths)
-            dirs.extend(valid_paths)
-        index = 0
-        while index < len(self._config.available_servers):
-            server_path = self._config.available_servers[index]
-            if is_ignored(server_path):
-                self._config.available_servers.pop(index)
-            else:
-                index += 1
-
-        def is_valid_folder(path: str):
-            return not os.path.isfile(os.path.join(path, IGNORE_PATTEN)) \
-                   and path not in self._config.available_servers
-
-        def init_conf(path: str):
-            file_list = filter(lambda _: os.path.isfile(os.path.join(path, _)), os.listdir(path))
-            conf = SlotConfig(checked=False, start_command=default_script, handler=default_handler)
-            for file in file_list:
-                if file[:5] == 'paper' and file[-4:] == '.jar':
-                    conf.handler = 'bukkit_handler'
-                    break
-            psi.save_config_simple(
-                config=conf,
-                file_name=os.path.join(path, MOUNTABLE_CONFIG),
-                in_data_folder=False)
-            src.reply(rtr('detect.init_conf', path=path))
-
-        dirs = list(filter(is_valid_folder, dirs))
-        for server_dir in dirs:
-            self._config.available_servers.append(server_dir)
-            src.reply(rtr('detect.detected', path=server_dir))
-            if not os.path.isfile(os.path.join(server_dir, MOUNTABLE_CONFIG)):
-                init_conf(server_dir)
-        if len(dirs) > 0:
-            src.reply(rtr('detect.summary', num=len(dirs)))
-        else:
-            src.reply(rtr('detect.summary_empty'))
-        self._config.save()
 
     @new_thread("mount-patch_properties")
     def patch_properties(self, slot: MountSlot):
