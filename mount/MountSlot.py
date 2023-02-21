@@ -13,7 +13,6 @@ class MountSlot:
         self.path = path
         self.load_config()
         self.properties = Properties()
-        self.load_properties()
         self.slot_lock = Lock()
 
     @property
