@@ -16,6 +16,7 @@ from .config import MountConfig, SlotConfig
 from .constants import *
 from .detect_helper import DetectHelper
 from .MountSlot import MountSlot
+from .reset_helper import ResetHelper
 from .utils import psi, rtr
 
 
@@ -255,55 +256,7 @@ class MountManager:
     def _do_reset(self, source: CommandSource, slot: MountSlot):
         global current_op
         current_op = Operation.RESET
-        reserve_dirs = ['playerdata', 'advancements', 'stats']
-        worlds = ['world', 'world_nether', 'world_the_end']
-        reset_worlds = filter(lambda x: os.path.isdir(x),
-                              map(lambda x: os.path.join(slot.path, slot.reset_path, x), worlds))
-        curr_worlds = filter(lambda x: os.path.isdir(x),
-                             map(lambda x: os.path.join(slot.path, x), worlds))
-
-        # reset main world (maybe the only world)
-        curr_main_world = os.path.join(slot.path, 'world')
-        reset_main_world = os.path.join(slot.path, slot.reset_path, 'world')
-        if curr_main_world not in curr_worlds:
-            pass
-        elif slot.reset_type == 'region':
-            dirs = os.listdir(curr_main_world)
-            for i in map(lambda x: os.path.join(curr_main_world, x),
-                         filter(lambda x: x not in reserve_dirs, dirs)):
-                psi.logger.info(f'Deleting world/{os.path.basename(i)}...')
-                if os.path.isdir(i):
-                    shutil.rmtree(i)
-                else:
-                    os.remove(i)
-        elif slot.reset_type == 'full':
-            psi.logger.info('Deleting the whole world/')
-            shutil.rmtree(curr_main_world)
-
-        if reset_main_world not in reset_worlds:
-            psi.logger.info('No need to reset world/')
-        elif slot.reset_type == 'region':
-            dirs = os.listdir(reset_main_world)
-            for i in map(lambda x: os.path.join(reset_main_world, x),
-                         filter(lambda x: x not in reserve_dirs, dirs)):
-                psi.logger.info(f'Resetting world/{os.path.basename(i)}')
-                if os.path.isdir(i):
-                    shutil.copytree(i, os.path.join(curr_main_world, os.path.basename(i)))
-                else:
-                    shutil.copy(i, os.path.join(curr_main_world, os.path.basename(i)))
-        elif slot.reset_type == 'full':
-            psi.logger.info('Resetting the whole world/')
-            shutil.copytree(reset_main_world, curr_main_world)
-
-        for i in worlds[1:]:
-            dir1 = os.path.join(slot.path, i)
-            dir2 = os.path.join(slot.path, slot.reset_path, i)
-            if dir1 in curr_worlds:
-                psi.logger.info(f'Deleting {i}')
-                shutil.rmtree(dir1)
-            if dir2 in reset_worlds:
-                psi.logger.info(f'Resetting {i}')
-                shutil.copytree(dir2, dir1)
+        ResetHelper.reset(slot.path, slot._config.reset_path, slot._config.reset_type)
 
     @new_thread("mount-mounting")
     @single_op(Operation.MOUNT)
