@@ -5,7 +5,7 @@ from jproperties import Properties
 
 from .config import SlotConfig as Config
 from .constants import MOUNTABLE_CONFIG
-from .utils import psi, rtr
+from .utils import logger, psi, rtr
 
 
 class MountSlot:
@@ -53,7 +53,7 @@ class MountSlot:
             with open(os.path.join(self.path, 'server.properties'), 'rb') as f:
                 self.properties.load(f, 'utf-8')
         except FileNotFoundError:
-            psi.logger.error(f'No properties file in {self.path}!')
+            logger().error(f'No properties file in {self.path}!')
 
     def save_properties(self):
         with open(os.path.join(self.path, 'server.properties'), 'wb') as f:

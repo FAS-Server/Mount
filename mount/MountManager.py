@@ -17,7 +17,7 @@ from .constants import *
 from .detect_helper import DetectHelper
 from .MountSlot import MountSlot
 from .reset_helper import ResetHelper
-from .utils import psi, rtr
+from .utils import logger, psi, rtr
 
 
 class Operation(Enum):
@@ -48,7 +48,7 @@ def single_op(op_type: Operation):
                     or (current_op is Operation.REQUEST_RESET and op_type is Operation.RESET) \
                     or (current_op is Operation.REQUEST_MOUNT and op_type is Operation.MOUNT) \
                     or (current_op in [Operation.REQUEST_RESET, Operation.REQUEST_MOUNT] and op_type is Operation.IDLE)
-                psi.logger.debug(f"Executing operation {op_type}, current operation {current_op}, allow = {allow}")
+                logger().debug(f"Executing operation {op_type}, current operation {current_op}, allow = {allow}")
                 if allow:
                     func(manager, src, *args, **kwargs)
                 else:
@@ -94,7 +94,7 @@ class MountManager:
         try:
             self.current_slot.lock(self._config.mount_name)
         except ResourceWarning:
-            psi.logger.error("Current server is already mounted, stopping mcdr...")
+            logger().error("Current server is already mounted, stopping mcdr...")
             psi.set_exit_after_stop_flag()
             psi.stop()
             return
@@ -135,14 +135,14 @@ class MountManager:
     def patch_properties(self, slot: MountSlot):
         if self._config.overwrite_path in ['', '.', None]:
             return
-        psi.logger.info("Patching properties file...")
+        logger().info("Patching properties file...")
         slot.load_properties()
         patches = Properties()
         try:
             with open(self._config.overwrite_path, mode="rb") as f:
                 patches.load(f, 'utf-8')
         except FileNotFoundError:
-            psi.logger.error('File Not Found, ignore overwriting...')
+            logger().error('File Not Found, ignore overwriting...')
             return
         for k, v in patches.items():
             slot.properties[k] = v
@@ -150,8 +150,33 @@ class MountManager:
 
     @new_thread("mount-patch_mcdr_config")
     def patch_mcdr_config(self, slot: MountSlot):
-        with open("config.yml", "r", encoding="utf-8") as f:
-            mcdr_config = yaml.safe_load(f)
+        ##########################################
+        #  Use private api to patch mcdr config  #
+        ##########################################
+
+        # _hacked_config = psi._mcdr_server.config
+        # _hacked_config.set_value('working_directory', slot.path)
+        # _hacked_config.set_value('start_command', slot._config.start_command)
+        # _hacked_config.set_value('handler', slot._config.handler)
+
+        # if self.current_slot.plg_dir not in ['', None, '.']:
+        #     try:
+        #         _hacked_config.set_value(
+        #             'plugin_directory',
+        #              _hacked_config['plugin_directory'].remove(self.current_slot.plg_dir))
+        #     except ValueError:
+        #         pass
+        # if slot.plg_dir not in ['', None, '.']:
+        #         _hacked_config.set_value(
+        #             'plugin_directory',
+        #              _hacked_config['plugin_directory'].append(self.current_slot.plg_dir))
+        
+        # _hacked_config.save()
+
+        ############################################
+        #  Edit file content to patch mcdr config  #
+        ############################################
+        mcdr_config = psi.get_mcdr_config()
 
         mcdr_config['working_directory'] = slot.path
         mcdr_config['start_command'] = slot.start_command
@@ -173,7 +198,7 @@ class MountManager:
     @single_op(Operation.REQUEST_MOUNT)
     def request_mount(self, source: CommandSource, path: str, with_confirm: bool = False):
         global current_op
-        psi.logger.debug("Received mount request, evaluating...")
+        logger().debug("Received mount request, evaluating...")
 
         if path == self.current_slot.path:
             source.reply(rtr('error.is_current_mount'))
