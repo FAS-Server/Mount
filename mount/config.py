@@ -73,10 +73,10 @@ class SlotConfig(Serializable):
 
         def get_button() -> RTextBase:
             error_button = RText("[?]", color=RColor.red).h(
-                rtr("button.error.hover"))
+                rtr("list.error_btn.hover"))
             mount_button = RText("[▷]")
-            reset_button = RText("[↻]", color=RColor.yellow).h(rtr("button.reset.hover")).c(RAction.suggest_command,
-                                                                                            COMMAND_PREFIX + " --reset")
+            reset_button = RText("[↻]", color=RColor.yellow).c(RAction.suggest_command,
+                                                               COMMAND_PREFIX + " --reset")
             if server_path == current_mount and mount_name == self.occupied_by:
                 if self.reset_path in ["", None, '.']:
                     reset_button.set_color(RColor.gray).h(

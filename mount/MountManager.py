@@ -331,7 +331,7 @@ class MountManager:
         assert hasattr(self._config, config_key)
         self._config.__setattr__(name=config_key, value=config_value)
         self._config.save()
-        src.reply(rtr("info.setup_config", config_key, config_value))
+        src.reply(rtr("config.set_value", config_key, config_value))
 
     @staticmethod
     def list_path_config(src: CommandSource, path: str):
