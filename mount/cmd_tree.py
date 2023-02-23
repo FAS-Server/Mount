@@ -5,7 +5,7 @@ from mcdreforged.api.types import CommandSource, PluginServerInterface
 from .config import SlotConfig
 from .constants import COMMAND_PREFIX
 from .MountManager import MountManager
-from .utils import rtr
+from .utils import rtr, psi
 
 
 def get_clickable(cmd: str):
@@ -15,8 +15,7 @@ def get_clickable(cmd: str):
 
 def get_help(src: CommandSource):
     sub_command = ['reset', 'list', 'reload', 'config']
-    payload = RTextList(RText(rtr('help_msg.title', version=src.get_server().as_plugin_server_interface()
-                                  .get_self_metadata().version)), '\n')
+    payload = RTextList(RText(rtr('help_msg.title', version=psi.get_self_metadata().version)), '\n')
     payload.append(
         get_clickable('<server_name>'),
         ' ',

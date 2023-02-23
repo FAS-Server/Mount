@@ -5,8 +5,7 @@ from mcdreforged.api.types import PluginServerInterface
 
 from .config import SlotConfig
 from .constants import IGNORE_PATTEN, MOUNTABLE_CONFIG
-
-psi = PluginServerInterface.get_instance().as_plugin_server_interface()
+from .utils import psi
 
 def is_ignored_slot(path: str) -> bool:
     """
