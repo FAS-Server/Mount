@@ -1,5 +1,8 @@
 import os
-from threading import Lock
+from threading import Lock, Thread
+import time
+from typing import Callable, Optional
+from anyio import Event
 
 from jproperties import Properties
 
@@ -8,12 +11,39 @@ from .constants import MOUNTABLE_CONFIG
 from .utils import logger, psi, rtr
 
 
+class StatsChecker(Thread):
+    def __init__(self, interval: int, cb: Callable[[], None]):
+        super().__init__()
+        self.setDaemon(True)
+        self.setName(self.__class__.__name__)
+        self._report_time = time.time()
+        self.stop_event = Event()
+        self.interval = interval
+        self._callback = cb
+
+    def run(self):
+        while True: # loop until stop
+            while True: # # loop for report
+                if self.stop_event.wait(1):
+                    return
+                if time.time() - self._report_time > self.interval:
+                    break
+            self._report_time = time.time()
+            self._callback()
+
+    def stop(self):
+        self.stop_event.set()
+
 class MountSlot:
     def __init__(self, path):
         self.path = path
         self.load_config()
         self.properties = Properties()
         self.slot_lock = Lock()
+        self.__players = []
+        self.__players_lock = Lock()
+        self.__stats_lock = Lock()
+        self.__stats_checker = StatsChecker(60, self.update_stats)
 
     @property
     def name(self):
@@ -88,3 +118,48 @@ class MountSlot:
         self._config.__setattr__(key, value)
         self.save_config()
         return rtr('config.set_value', key=rtr(f'config.slot.{key}'), value=self._config.__getattribute__(key))
+
+    def on_player_join(self, player: str):
+        with self.__players_lock:
+            self.update_stats()
+            self._config.stats.total_players = self._config.stats.total_players + 1
+            self.__players.append(player)
+            self.update_stats()
+
+    def on_player_left(self, player: str):
+        try:
+            with self.__players_lock:
+                self.update_stats()
+                self.__players.remove(player)
+        except ValueError:
+            pass
+
+    def on_mount(self):
+        if not self.__stats_checker.is_alive:
+            with self.__stats_lock:
+                current = time.time_ns
+                self._config.stats.last_mount_ns = current
+                self.save_config()
+            self.__stats_checker.start()
+
+    def on_unmount(self):
+        if self.__stats_checker.is_alive:
+            self.update_stats()
+            self.__stats_checker.stop()
+            self.__stats_checker.join()
+
+
+    def update_stats(self):
+        if not self.__stats_checker.is_alive:
+            return
+        with self.__stats_lock:
+            current = time.time_ns
+            prev = self._config.stats.last_mount_ns
+            p = len(self.__players)
+            t = current - prev
+            stats = self._config.stats
+            stats.last_mount_ns = current
+            stats.total_use_time = stats.total_use_time + t
+            stats.total_player_time = stats.total_player_time + t * p
+            self._config.stats = stats
+            self.save_config()

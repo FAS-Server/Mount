@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 from mcdreforged.api.rtext import *
@@ -30,6 +31,12 @@ class MountConfig(Serializable):
         return psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
 
 
+class SlotStats(Serializable):
+    last_mount_ns: int = time.time_ns
+    total_use_time: int = 0
+    total_player_time: int = 0
+    total_players: int = 0
+
 class SlotConfig(Serializable):
     checked: bool = False
     desc: str = "Demo server"
@@ -44,6 +51,9 @@ class SlotConfig(Serializable):
 
     # mcdr plugin path for specific plugin, empty for disable, should be relative to mc server path
     plugin_dir: str = ""
+
+    # slot stats, used for rank
+    stats: SlotStats = SlotStats()
 
     def display(self, server_path: str):
         conf_list = self.get_annotations_fields()
