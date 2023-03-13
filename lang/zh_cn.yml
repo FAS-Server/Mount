@@ -25,6 +25,10 @@ mount:
       uncheck: "槽位信息未确认, 请联系管理员进行操作"
     error_btn:
       hover: "槽位状态异常, 请联系管理员进行操作"
+    no_more_page: 抵达了世界尽头～
+    empty: 这里空荡荡的～
+    prev_page: 上一页
+    next_page: 下一页
   error:
     is_current_mount: "已经挂载到此槽位"
     unknown_mount_path: "未知的挂载目标, 请检查挂载列表"

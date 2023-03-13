@@ -19,6 +19,7 @@ class MountConfig(Serializable):
 
     current_server: str = "servers/Parkour"
     mount_name: str = "MountDemo"
+    list_size: int = 15
 
     def save(self):
         psi.save_config_simple(

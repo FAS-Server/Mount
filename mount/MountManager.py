@@ -1,6 +1,6 @@
 import functools
+import math
 import os.path
-import shutil
 import time
 from enum import Enum
 from threading import Lock
@@ -310,9 +310,17 @@ class MountManager:
         self.next_slot = None
 
     @new_thread('mount-list')
-    def list_servers(self, src: CommandSource):
+    def list_servers(self, src: CommandSource, page: int = 1):
+        list_size = self._config.list_size
+        available_servers = self._config.available_servers
+        max_page = math.ceil(len(available_servers) / list_size)
+        if not 1 <= page <= max_page:
+            page = 1
+        
+        left = (page - 1) * list_size
+        right = min(len(available_servers), page * list_size)
         src.reply(RText(rtr('list.title')))
-        for server in self._config.available_servers:
+        for server in available_servers[left, right]:
             slot = MountSlot(path=server)
             src.reply(
                 slot
@@ -320,6 +328,37 @@ class MountManager:
                     .as_list_entry(slot.name, slot.path,
                         self._config.mount_name, self._config.current_server
                 ))
+            
+        # <<<   curr/total   >>>
+        link_color = {
+            True: RColor.green,
+            False: RColor.gray
+        }
+
+        left_link: RText
+        if page <= 1:
+            left_link = RText('<<<', color=link_color[False]).h(rtr('list.no_more_page')[::-1])
+        else:
+            left_link = RText('<<<', color=link_color[True]).h(rtr('list.prev_page')) \
+                .c(RAction.run_command, COMMAND_PREFIX + ' --list ' + str(page - 1))
+
+        right_link: RText
+        if page >= max_page:
+            right_link = RText('>>>', color=link_color[False]).h(rtr('list.no_more_page'))
+        else:
+            right_link = RText('>>>', color=link_color[True]).h(rtr('list.next_page')) \
+                .c(RAction.run_command, COMMAND_PREFIX + ' --list ' + str(page + 1))
+
+        footer = RTextList(
+            left_link,
+            f'   {page} / {max_page}   ',
+            right_link
+        )
+        if left == right:
+            src.reply(rtr('list.empty'))
+        else:
+            src.reply(footer)
+        
 
     def get_config(self, config_key, src: Optional[CommandSource] = None):
         if src is not None:

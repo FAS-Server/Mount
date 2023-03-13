@@ -1,4 +1,4 @@
-from mcdreforged.api.command import GreedyText, Literal, Text
+from mcdreforged.api.command import GreedyText, Literal, Text, Number
 from mcdreforged.api.rtext import RAction, RColor, RText, RTextList
 from mcdreforged.api.types import CommandSource, PluginServerInterface
 
@@ -70,11 +70,13 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         Literal({'--reset', '-rs'}).runs(lambda src: manager.request_reset(src))
     ).then(
-        Literal('--confirm').runs(lambda src,
-                                  ctx: manager.confirm_operation(src))
+        Literal('--confirm').runs(lambda src, ctx: manager.confirm_operation(src))
     ).then(
-        Literal({'--list', '-l'}).runs(lambda src,
-                                       ctx: manager.list_servers(src))
+        Literal({'--list', '-l'}).runs(
+            lambda src, ctx: manager.list_servers(src)
+        ).then(
+            Number('page').runs(lambda src, ctx: manager.list_servers(src, ctx['page']))
+        )
     ).then(
         Literal('--abort').runs(lambda src, ctx: manager.abort_operation(src))
     ).then(

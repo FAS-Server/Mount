@@ -25,6 +25,10 @@ mount:
       uncheck: "Unchecked mountable config, please contact server admin for help"
     error_btn:
       hover: "Unknow server status, please contact server admin for help"
+    no_more_page: You reach the border!
+    empty: Nothing here
+    prev_page: Previous page
+    next_page: Next page
   error:
     is_current_mount: "Already mounted to this path!"
     unknown_mount_path: "Unknown mount path, please checkout the mount list!"
