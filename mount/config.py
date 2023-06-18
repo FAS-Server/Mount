@@ -66,7 +66,7 @@ class SlotConfig(Serializable):
             elif isinstance(config_value, bool):
                 suggested_value = not config_value
                 config_value = rtr(f'config.bool.{config_value}')
-            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
+            return RText(f'{rtr(f"config.slot.{config_key}")}: { "positive" if config_value else "negative" }\n') \
                 .h(rtr(f'config.hover', key=config_key)) \
                 .c(RAction.suggest_command,
                    f'{COMMAND_PREFIX} -config {server_path} set {config_key} {suggested_value}')

@@ -64,8 +64,8 @@ mount:
     invalid_key: "No such config key: {key}"
     invalid_bool: "{value} is not an valid bool value! Please use true or false"
     bool:
-      True: "§aTrue§r"
-      False: "§cFalse§r"
+      positive: "§aTrue§r"
+      negative: "§cFalse§r"
     slot:
       desc: "Description"
       checked: "Checked:"

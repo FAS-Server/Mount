@@ -64,8 +64,8 @@ mount:
     invalid_key: "无此配置项: {key}"
     invalid_bool: "{value}不是一个有效的布尔值! 请使用true或false"
     bool:
-      True: "§a是§r"
-      False: "§c否§r"
+      positive: "§a是§r"
+      negative: "§c否§r"
     slot:
       desc: "描述信息"
       checked: "人工检查"
