@@ -1,8 +1,8 @@
 import os
-from threading import Lock, Thread
 import time
-from typing import Callable, Optional
-from anyio import Event
+from asyncio import Event
+from threading import Lock, Thread
+from typing import Callable
 
 from jproperties import Properties
 
