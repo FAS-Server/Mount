@@ -84,7 +84,7 @@ class SlotConfig(Serializable):
             return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
                 .h(rtr(f'config.hover', key=config_key)) \
                 .c(RAction.suggest_command,
-                   f'{COMMAND_PREFIX} -config {server_path} set {config_key} {suggested_value}')
+                   f'{COMMAND_PREFIX} --config {server_path} set {config_key} {suggested_value}')
 
         payload = RTextList()
         for key in conf_list:

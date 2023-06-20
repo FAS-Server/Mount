@@ -34,7 +34,7 @@ def get_help(src: CommandSource):
 
 def get_config_help(src: CommandSource):
     payload = RTextList(
-        get_clickable(" -config <server_name>"),
+        get_clickable(" --config <server_name>"),
         ' ',
         RText(rtr('help_msg.config.all')),
         '\n',
