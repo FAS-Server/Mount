@@ -1,6 +1,9 @@
 # Mount
 
-![MCDReforged](https://img.shields.io/badge/dynamic/json?label=MCDReforged&query=dependencies.mcdreforged&url=https%3A%2F%2Fraw.githubusercontent.com%2FFAS-Server%2FMount%2Fmaster%2Fmcdreforged.plugin.json&style=plastic) ![license](https://img.shields.io/github/license/FAS-Server/Mount?style=plastic) ![build status](https://img.shields.io/github/workflow/status/FAS-Server/Mount/CI%20for%20MCDR%20Plugin?label=build&style=plastic) ![Release](https://img.shields.io/github/v/release/FAS-Server/Mount?style=plastic) ![total download](https://img.shields.io/github/downloads/FAS-Server/Mount/total?label=total%20download&style=plastic)
+![MCDReforged](https://img.shields.io/badge/dynamic/json?label=MCDReforged&query=dependencies.mcdreforged&url=https%3A%2F%2Fraw.githubusercontent.com%2FFAS-Server%2FMount%2Fmaster%2Fmcdreforged.plugin.json&style=plastic)
+![许可证](https://img.shields.io/github/license/FAS-Server/Mount?style=plastic)
+![版本](https://img.shields.io/github/v/release/FAS-Server/Mount?style=plastic)
+![总下载](https://img.shields.io/github/downloads/FAS-Server/Mount/total?label=total%20download&style=plastic)
 
 **简体中文** | **[English](README_en.md)**
 
@@ -41,7 +44,9 @@
   // 当前MCDR实例正在使用的挂载点
   current_server: "servers/Parkour",
   // 此MCDR实例的挂载标识
-  mount_name: "MountDemo"
+  mount_name: "MountDemo",
+  // 分页大小
+  list_size: 15
 }
 ```
 2. 挂载点配置信息, 储存于挂载点路径下的`mountable.json`中, 配置内的文件路径为MC服务器目录的相对路径
@@ -62,7 +67,10 @@
   // 此挂载点的重置方法, full代表全部重置, region代表保留玩家信息(如跑酷记录)
   reset_type: "full",
   // 专为此挂载点的mcdr插件目录, 使得每个挂载点可使用专有的插件, 空或者.代表无
-  plugin_dir: ""
+  plugin_dir: "",
+  stats: {
+    // 此挂载点的统计信息, 将自动生成
+  }
 }
 ```
 ## 其他
