@@ -4,9 +4,10 @@ import os.path
 import time
 from enum import Enum
 from threading import Lock
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
-import yaml
+from ruamel.yaml import YAML
+# import yaml
 from jproperties import Properties
 from mcdreforged.api.decorator import new_thread
 from mcdreforged.api.rtext import *
@@ -88,7 +89,6 @@ class MountManager:
         :param config: the MountConfig for current mcdr server
         """
         self.configurable_things = None
-        self.__abort_mount = None
         self._config = config
         self.current_slot: Optional[MountSlot] = MountSlot(self._config.current_server)
         try:
@@ -154,7 +154,7 @@ class MountManager:
         #  Use private api to patch mcdr config  #
         ##########################################
 
-        # _hacked_config = psi._mcdr_server.config
+        _hacked_config = psi._mcdr_server.config
         # _hacked_config.set_value('working_directory', slot.path)
         # _hacked_config.set_value('start_command', slot._config.start_command)
         # _hacked_config.set_value('handler', slot._config.handler)
@@ -171,26 +171,34 @@ class MountManager:
         #             'plugin_directory',
         #              _hacked_config['plugin_directory'].append(self.current_slot.plg_dir))
         
-        # _hacked_config.save()
+        _hacked_config.save()
 
         ############################################
         #  Edit file content to patch mcdr config  #
         ############################################
         mcdr_config = psi.get_mcdr_config()
 
+        print(f'prev mcdr config is {mcdr_config}')
+
         mcdr_config['working_directory'] = slot.path
         mcdr_config['start_command'] = slot.start_command
         mcdr_config['handler'] = slot.handler
+        plugin_dirs: List[str] = mcdr_config['plugin_directories']
+        print(f'prev plugin dirs is {plugin_dirs}')
         if self.current_slot.plg_dir not in ['', None, '.']:
             try:
-                mcdr_config['plugin_directories'].remove(self.current_slot.plg_dir)
+                plugin_dirs.remove(self.current_slot.plg_dir)
             except ValueError:
                 pass
         if slot.plg_dir not in ['', None, '.']:
-            mcdr_config['plugin_directories'].append(slot.plg_dir)
+            plugin_dirs.append(slot.plg_dir)
+        print(f'new plugin dirs is {plugin_dirs}')
+        mcdr_config['plugin_directories'] = plugin_dirs
 
+        print(f'new mcdr config is {mcdr_config}')
         with open('config.yml', 'w', encoding='utf-8') as f:
-            yaml.dump(mcdr_config, f, default_flow_style=False)
+            YAML().dump(mcdr_config, f)
+            # yaml.dump(mcdr_config, f, default_flow_style=False)
 
     def request_operation(self, mode: str, source: CommandSource, path: Optional[str] = None, with_confirm=False):
         pass
@@ -320,7 +328,7 @@ class MountManager:
         left = (page - 1) * list_size
         right = min(len(available_servers), page * list_size)
         src.reply(RText(rtr('list.title')))
-        for server in available_servers[left, right]:
+        for server in available_servers[left: right]:
             slot = MountSlot(path=server)
             src.reply(
                 slot
@@ -337,7 +345,7 @@ class MountManager:
 
         left_link: RText
         if page <= 1:
-            left_link = RText('<<<', color=link_color[False]).h(rtr('list.no_more_page')[::-1])
+            left_link = RText('<<<', color=link_color[False]).h(rtr('list.no_more_page'))
         else:
             left_link = RText('<<<', color=link_color[True]).h(rtr('list.prev_page')) \
                 .c(RAction.run_command, COMMAND_PREFIX + ' --list ' + str(page - 1))

@@ -35,7 +35,7 @@ class StatsChecker(Thread):
         self.stop_event.set()
 
 class MountSlot:
-    def __init__(self, path):
+    def __init__(self, path: str):
         self.path = path
         self.load_config()
         self.properties = Properties()
@@ -46,7 +46,7 @@ class MountSlot:
         self.__stats_checker = StatsChecker(60, self.update_stats)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return os.path.basename(os.path.normpath(self.path))
 
     @property
@@ -107,6 +107,8 @@ class MountSlot:
         self.slot_lock.release()
 
     def edit_config(self, key: str, value: str):
+        if key in [ 'stats' ]:
+            return rtr('config.cannot_edit', key=rtr(f'config.slot.{key}'))
         if isinstance(self._config.__getattribute__(key), bool):
             value = value.lower()
             if value in ['true', 'ok', 't', 'o', 'yes', 'y']:
@@ -146,14 +148,13 @@ class MountSlot:
         if self.__stats_checker.is_alive:
             self.update_stats()
             self.__stats_checker.stop()
-            self.__stats_checker.join()
 
 
     def update_stats(self):
         if not self.__stats_checker.is_alive:
             return
         with self.__stats_lock:
-            current = time.time_ns
+            current = time.time_ns()
             prev = self._config.stats.last_mount_ns
             p = len(self.__players)
             t = current - prev

@@ -63,6 +63,7 @@ mount:
     empty: "§eEmpty§r"
     invalid_key: "No such config key: {key}"
     invalid_bool: "{value} is not an valid bool value! Please use true or false"
+    cannot_edit: "{key} is not allowed to edit!"
     bool:
       positive: "§aTrue§r"
       negative: "§cFalse§r"
@@ -75,4 +76,5 @@ mount:
       reset_path: "Reset Path"
       reset_type: "Reset Type"
       plugin_dir: "Specified Plugin Path"
+      stats: "Stats"
     set_value: "Value of {key} has been set to {value}"

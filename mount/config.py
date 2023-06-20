@@ -1,5 +1,4 @@
-import time
-from typing import List
+from typing import List, Union
 
 from mcdreforged.api.rtext import *
 from mcdreforged.api.utils import Serializable
@@ -11,16 +10,24 @@ from .utils import psi, rtr
 class MountConfig(Serializable):
     welcome_player: bool = True
     short_prefix = True  # let !!m to be a short command
-    servers_path: List[str] = [ "../servers" ]
+    servers_path: Union[str, List[str]] = [ "../servers" ]
     overwrite_path: str = "../servers/server.properties.overwrite"
 
     # available mc servers for this MCDR instance, should be same with the dirname of that server
     available_servers: List[str] = [
-        "servers/Parkour", "servers/PVP", "servers/Bingo"]
+        "../servers/Parkour", "../servers/PVP", "../servers/Bingo"]
 
-    current_server: str = "servers/Parkour"
+    current_server: str = "../servers/Parkour"
     mount_name: str = "MountDemo"
     list_size: int = 15
+
+    def migrate(self):
+        need_save = False
+        if isinstance(self.servers_path, str):
+            need_save = True
+            self.servers_path = [self.servers_path]
+        if need_save:
+            self.save()
 
     def save(self):
         psi.save_config_simple(
@@ -28,14 +35,20 @@ class MountConfig(Serializable):
     
     @staticmethod
     def load() -> 'MountConfig':
-        return psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
+        config = psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
+        config.migrate()
+        return config
 
 
 class SlotStats(Serializable):
-    last_mount_ns: int = time.time_ns
+    last_mount_ns: int = -1
     total_use_time: int = 0
     total_player_time: int = 0
     total_players: int = 0
+
+    def display(self) -> RTextBase:
+        # [TODO) display stats to users
+        return RText('')
 
 class SlotConfig(Serializable):
     checked: bool = False
@@ -56,17 +69,19 @@ class SlotConfig(Serializable):
     stats: SlotStats = SlotStats()
 
     def display(self, server_path: str):
-        conf_list = self.get_annotations_fields()
+        conf_list = self.get_field_annotations()
 
         def get_config_text(config_key: str):
             config_value = self.__getattribute__(config_key)
             suggested_value = config_value
             if config_value in ['', None, '.']:
                 config_value = rtr('config.empty')
+            elif config_key == 'stats':
+                return RText('')
             elif isinstance(config_value, bool):
                 suggested_value = not config_value
-                config_value = rtr(f'config.bool.{config_value}')
-            return RText(f'{rtr(f"config.slot.{config_key}")}: { "positive" if config_value else "negative" }\n') \
+                config_value = rtr(f'config.bool.{"positive" if config_value else "negative"}')
+            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
                 .h(rtr(f'config.hover', key=config_key)) \
                 .c(RAction.suggest_command,
                    f'{COMMAND_PREFIX} -config {server_path} set {config_key} {suggested_value}')

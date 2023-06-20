@@ -13,8 +13,7 @@ manager: Optional[MountManager] = None
 
 def on_load(server: PluginServerInterface, prev_module):
     global manager
-    config: MountConfig = server.load_config_simple(
-        file_name=CONFIG_NAME, in_data_folder=False, target_class=MountConfig)
+    config: MountConfig = MountConfig.load()
     manager = MountManager(config=config)
     register_commands(server, manager)
 

@@ -63,6 +63,7 @@ mount:
     empty: "§e空§r"
     invalid_key: "无此配置项: {key}"
     invalid_bool: "{value}不是一个有效的布尔值! 请使用true或false"
+    cannot_edit: "不允许修改{key}"
     bool:
       positive: "§a是§r"
       negative: "§c否§r"
@@ -75,4 +76,5 @@ mount:
       reset_path: "重置路径"
       reset_type: "重置方法"
       plugin_dir: "独立插件路径"
+      stats: "统计信息"
     set_value: "选项 {key} 的值已经设为 {value}"
