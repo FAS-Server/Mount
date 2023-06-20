@@ -348,14 +348,14 @@ class MountManager:
             left_link = RText('<<<', color=link_color[False]).h(rtr('list.no_more_page'))
         else:
             left_link = RText('<<<', color=link_color[True]).h(rtr('list.prev_page')) \
-                .c(RAction.run_command, COMMAND_PREFIX + ' --list ' + str(page - 1))
+                .c(RAction.suggest_command, COMMAND_PREFIX + ' --list ' + str(page - 1))
 
         right_link: RText
         if page >= max_page:
             right_link = RText('>>>', color=link_color[False]).h(rtr('list.no_more_page'))
         else:
             right_link = RText('>>>', color=link_color[True]).h(rtr('list.next_page')) \
-                .c(RAction.run_command, COMMAND_PREFIX + ' --list ' + str(page + 1))
+                .c(RAction.suggest_command, COMMAND_PREFIX + ' --list ' + str(page + 1))
 
         footer = RTextList(
             left_link,
