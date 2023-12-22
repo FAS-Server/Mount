@@ -28,47 +28,47 @@
 ```json5
 {
   // 是否在玩家加入时显示一条帮助
-  welcome_player: true,
+  "welcome_player": true,
   // 是否启用 !!m 短指令
-  short_prefix: true,
+  "short_prefix": true,
   // 自动检测挂载点时的目录
-  servers_path: [ "./servers" ],
+  "servers_path": [ "./servers" ],
   // 重写挂载点的server.properties时使用的覆盖配置, 格式同server.properties,只添加需要覆盖的配置行即可
-  overwrite_name: "../servers/server.properties.overwrite",
+  "overwrite_path": "../servers/server.properties.overwrite",
   // 当前可用的挂载点列表,
-  available_servers: [
+  "available_servers": [
     "servers/Parkour",
     "servers/PVP",
     "servers/Bingo"
   ],
   // 当前MCDR实例正在使用的挂载点
-  current_server: "servers/Parkour",
+  "current_server": "servers/Parkour",
   // 此MCDR实例的挂载标识
-  mount_name: "MountDemo",
+  "mount_name": "MountDemo",
   // 分页大小
-  list_size: 15
+  "list_size": 15
 }
 ```
 2. 挂载点配置信息, 储存于挂载点路径下的`mountable.json`中, 配置内的文件路径为MC服务器目录的相对路径
 ```json5
 {
   // 是否通过了人工确认
-  checked: false,
+  "checked": false,
   // 描述信息
-  desc:  "Demo server",
+  "desc":  "Demo server",
   // 此挂载点启动命令
-  start_command: "./start.sh",
+  "start_command": "./start.sh",
   // 此挂载点使用的MCDR handler
-  handler: "vanilla_handler",
+  "handler": "vanilla_handler",
   // 占用此挂载点的MCDR实例的挂载标识, 空代表未挂载
-  occupied_by: "",
+  "occupied_by": "",
   // 此挂载点的重置路径, 空或者.代表无重置路径
-  reset_path: "",
+  "reset_path": "",
   // 此挂载点的重置方法, full代表全部重置, region代表保留玩家信息(如跑酷记录)
-  reset_type: "full",
+  "reset_type": "full",
   // 专为此挂载点的mcdr插件目录, 使得每个挂载点可使用专有的插件, 空或者.代表无
-  plugin_dir: "",
-  stats: {
+  "plugin_dir": "",
+  "stats": {
     // 此挂载点的统计信息, 将自动生成
   }
 }

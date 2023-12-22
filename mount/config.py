@@ -73,15 +73,16 @@ class SlotConfig(Serializable):
 
         def get_config_text(config_key: str):
             config_value = self.__getattribute__(config_key)
+            config_value_str = config_value
             suggested_value = config_value
             if config_value in ['', None, '.']:
-                config_value = rtr('config.empty')
+                config_value_str = rtr('config.empty')
             elif config_key == 'stats':
                 return RText('')
             elif isinstance(config_value, bool):
                 suggested_value = not config_value
-                config_value = rtr(f'config.bool.{"positive" if config_value else "negative"}')
-            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value}\n') \
+                config_value_str = rtr(f'config.bool.{"positive" if config_value else "negative"}')
+            return RText(f'{rtr(f"config.slot.{config_key}")}: {config_value_str}\n') \
                 .h(rtr(f'config.hover', key=config_key)) \
                 .c(RAction.suggest_command,
                    f'{COMMAND_PREFIX} --config {server_path} set {config_key} {suggested_value}')
