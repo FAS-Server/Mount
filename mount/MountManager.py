@@ -6,7 +6,6 @@ from enum import Enum
 from threading import Lock
 from typing import Callable, List, Optional
 
-from ruamel.yaml import YAML
 from jproperties import Properties
 from mcdreforged.api.decorator import new_thread
 from mcdreforged.api.rtext import *
