@@ -1,6 +1,6 @@
 {
   "id": "mount",
-  "version": "0.3.0-beta2",
+  "version": "0.3.0",
   "name": "Mount",
   "description": {
     "en_us": "Mount different minecraft server into a mcdr server, with overwritten properties!",
