@@ -7,7 +7,6 @@ from threading import Lock
 from typing import Callable, List, Optional
 
 from ruamel.yaml import YAML
-# import yaml
 from jproperties import Properties
 from mcdreforged.api.decorator import new_thread
 from mcdreforged.api.rtext import *
@@ -150,55 +149,27 @@ class MountManager:
 
     @new_thread("mount-patch_mcdr_config")
     def patch_mcdr_config(self, slot: MountSlot):
-        ##########################################
-        #  Use private api to patch mcdr config  #
-        ##########################################
-
-        _hacked_config = psi._mcdr_server.config
-        # _hacked_config.set_value('working_directory', slot.path)
-        # _hacked_config.set_value('start_command', slot._config.start_command)
-        # _hacked_config.set_value('handler', slot._config.handler)
-
-        # if self.current_slot.plg_dir not in ['', None, '.']:
-        #     try:
-        #         _hacked_config.set_value(
-        #             'plugin_directory',
-        #              _hacked_config['plugin_directory'].remove(self.current_slot.plg_dir))
-        #     except ValueError:
-        #         pass
-        # if slot.plg_dir not in ['', None, '.']:
-        #         _hacked_config.set_value(
-        #             'plugin_directory',
-        #              _hacked_config['plugin_directory'].append(self.current_slot.plg_dir))
-        
-        _hacked_config.save()
-
-        ############################################
-        #  Edit file content to patch mcdr config  #
-        ############################################
-        mcdr_config = psi.get_mcdr_config()
-
-        print(f'prev mcdr config is {mcdr_config}')
-
-        mcdr_config['working_directory'] = slot.path
-        mcdr_config['start_command'] = slot.start_command
-        mcdr_config['handler'] = slot.handler
-        plugin_dirs: List[str] = mcdr_config['plugin_directories']
-        print(f'prev plugin dirs is {plugin_dirs}')
-        if self.current_slot.plg_dir not in ['', None, '.']:
+        # MCDR v2.7 provided api to modify config
+        current_plg_dirs = psi.get_mcdr_config()['plugin_directories']
+        prev_added_plg_dir = self.current_slot.plg_dir
+        if prev_added_plg_dir not in ['', None, '.']:
             try:
-                plugin_dirs.remove(self.current_slot.plg_dir)
+                current_plg_dirs.remove(prev_added_plg_dir)
             except ValueError:
                 pass
         if slot.plg_dir not in ['', None, '.']:
-            plugin_dirs.append(slot.plg_dir)
-        print(f'new plugin dirs is {plugin_dirs}')
-        mcdr_config['plugin_directories'] = plugin_dirs
-
-        print(f'new mcdr config is {mcdr_config}')
-        with open('config.yml', 'w', encoding='utf-8') as f:
-            YAML().dump(mcdr_config, f)
-            # yaml.dump(mcdr_config, f, default_flow_style=False)
+            try:
+                current_plg_dirs.append(slot.plg_dir)
+            except ValueError:
+                pass
+        psi.modify_mcdr_config(
+            changes={
+                'working_directory': slot.path,
+                'start_command': slot._config.start_command,
+                'handler': slot._config.handler,
+                'plugin_directories': current_plg_dirs
+            }
+        )
 
     def request_operation(self, mode: str, source: CommandSource, path: Optional[str] = None, with_confirm=False):
         pass
@@ -304,7 +275,6 @@ class MountManager:
         self.current_slot, self.next_slot = slot, None
         self._config.current_server = slot.path
         self._config.save()
-        psi.execute_command("!!MCDR reload config")
 
     @single_op(Operation.IDLE)
     def abort_operation(self, source: CommandSource):

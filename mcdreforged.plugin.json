@@ -1,17 +1,17 @@
 {
   "id": "mount",
-  "version": "0.3.0-beta1",
+  "version": "0.3.0-beta2",
   "name": "Mount",
   "description": {
     "en_us": "Mount different minecraft server into a mcdr server, with overwritten properties!",
     "zh_cn": "将不同的MC服务器挂载进入一个mcdr服务器, 同时能够重写服务器配置!"
   },
   "author": [
-    "YehowahLiu"
+    "401U"
   ],
   "link": "https://github.com/FAS-Server/Mount",
   "dependencies": {
-    "mcdreforged": ">=2.0.0"
+    "mcdreforged": ">=2.7.0"
   },
   "entrypoint": "mount.entry",
   "archive_name": "Mount-v{version}.pyz",
