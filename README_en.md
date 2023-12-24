@@ -76,3 +76,4 @@
 ## Other
 - add file with name `.mount-ignore` under folder in auto-detect folder to not detect that folder
 - by editing config file, you can add any server in any folder as mountable server
+- the actual config file must be json format, so remove the comments starting with `//` from above config sample
