@@ -46,7 +46,9 @@
   // 此MCDR实例的挂载标识
   "mount_name": "MountDemo",
   // 分页大小
-  "list_size": 15
+  "list_size": 15,
+  // 调试模式, 开启后会在控制台输出更多信息
+  "debug": false
 }
 ```
 2. 挂载点配置信息, 储存于挂载点路径下的`mountable.json`中, 配置内的文件路径为MC服务器目录的相对路径

@@ -46,7 +46,9 @@
   // Mount-label used to identity this MCDR instance
   "mount_name": "MountDemo",
   // page size of pagination
-  "list_size": 15
+  "list_size": 15,
+  // debug mode, will print more info
+  "debug": false
 }
 ```
 2. Config for mountable server, stored under mc server with name`mountable.json`, and path in config should relative to mc server folder
