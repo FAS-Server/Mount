@@ -4,7 +4,7 @@ from mcdreforged.api.rtext import *
 from mcdreforged.api.utils import Serializable
 
 from .constants import COMMAND_PREFIX, CONFIG_NAME
-from .utils import psi, rtr
+from .utils import debug, psi, rtr, setDebugNoCheck
 
 
 class MountConfig(Serializable):
@@ -20,6 +20,7 @@ class MountConfig(Serializable):
     current_server: str = "../servers/Parkour"
     mount_name: str = "MountDemo"
     list_size: int = 15
+    debug: bool = False
 
     def migrate(self):
         need_save = False
@@ -30,12 +31,14 @@ class MountConfig(Serializable):
             self.save()
 
     def save(self):
+        debug(f'Saving plugin config...')
         psi.save_config_simple(
             config=self, file_name=CONFIG_NAME, in_data_folder=False)
     
     @staticmethod
     def load() -> 'MountConfig':
         config = psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
+        setDebugNoCheck(config.debug)
         config.migrate()
         return config
 

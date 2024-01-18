@@ -5,7 +5,7 @@ from mcdreforged.api.types import PluginServerInterface
 
 from .config import SlotConfig
 from .constants import IGNORE_PATTEN, MOUNTABLE_CONFIG
-from .utils import psi
+from .utils import debug, psi
 
 def is_ignored_slot(path: str) -> bool:
     """
@@ -16,6 +16,7 @@ def is_ignored_slot(path: str) -> bool:
 class DetectHelper:
     @staticmethod
     def detect_slots(detect_paths: Iterable[str], prev_slots: Iterable[str]) -> Tuple[List[str], List[str]]:
+        debug(f'Detecting slots from {detect_paths}, previous slots: {prev_slots}')
         all_avaiable_paths = []
         for path in detect_paths:
             raw_paths = os.listdir(path)
@@ -25,11 +26,13 @@ class DetectHelper:
         
         new_slot_paths = filter(lambda p: p not in prev_slots, all_avaiable_paths)
         removal_slot_paths = filter(lambda p: p not in all_avaiable_paths, prev_slots)
+        debug(f'New slots: {new_slot_paths}, removal slots: {removal_slot_paths}')
         return (list(set(new_slot_paths)), list(set(removal_slot_paths)))
 
 
     @staticmethod
     def init_conf(path: str):
+        debug(f'Initializing mountable config for {path}')
         script_map = {
             'posix': './start.sh',
             'nt': 'start.bat'
@@ -42,6 +45,7 @@ class DetectHelper:
             if file[:5] == 'paper' and file[-4:] == '.jar':
                 conf.handler = 'bukkit_handler'
                 break
+        debug(f'saving mountable config: {conf}')
         psi.save_config_simple(
             config=conf,
             file_name=os.path.join(path, MOUNTABLE_CONFIG),

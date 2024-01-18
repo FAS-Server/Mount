@@ -16,7 +16,7 @@ from .constants import *
 from .detect_helper import DetectHelper
 from .MountSlot import MountSlot
 from .reset_helper import ResetHelper
-from .utils import logger, psi, rtr
+from .utils import logger, psi, rtr, debug
 
 
 class Operation(Enum):
@@ -47,7 +47,7 @@ def single_op(op_type: Operation):
                     or (current_op is Operation.REQUEST_RESET and op_type is Operation.RESET) \
                     or (current_op is Operation.REQUEST_MOUNT and op_type is Operation.MOUNT) \
                     or (current_op in [Operation.REQUEST_RESET, Operation.REQUEST_MOUNT] and op_type is Operation.IDLE)
-                logger().debug(f"Executing operation {op_type}, current operation {current_op}, allow = {allow}")
+                debug(f"Executing operation {op_type}, current operation {current_op}, allow = {allow}")
                 if allow:
                     func(manager, src, *args, **kwargs)
                 else:
@@ -65,6 +65,7 @@ def need_restart(reason: RTextBase):
     def wrapper(func: Callable):
         @functools.wraps(func)
         def wrap(*args, **kwargs):
+            debug(f"Need restart: {reason}")
             global current_op
             for t in range(10):
                 psi.broadcast(rtr('info.countdown', sec=10 - t, reason=reason))
@@ -86,6 +87,7 @@ class MountManager:
         constructor
         :param config: the MountConfig for current mcdr server
         """
+        debug("Initializing MountManager...")
         self.configurable_things = None
         self._config = config
         self.current_slot: Optional[MountSlot] = MountSlot(self._config.current_server)
@@ -100,6 +102,7 @@ class MountManager:
 
 
     def reload(self, src: CommandSource):
+        debug("received reload request, reloading...")
         self._config = MountConfig.load()
         
         new_slots, removal_slots = DetectHelper.detect_slots(self._config.servers_path, self._config.available_servers)
@@ -111,6 +114,7 @@ class MountManager:
                 src.reply(rtr('detect.init_conf', path=slot))
 
         for slot in removal_slots:
+            debug(f"removing {slot} from available servers...")
             self._config.available_servers.remove(slot)
 
         if len(new_slots) > 0:
@@ -118,6 +122,7 @@ class MountManager:
         else:
             src.reply(rtr('detect.summary_empty'))
         self._config.save()
+        debug("reload path done, try to reload self plugin...")
         psi.reload_plugin(psi.get_self_metadata().id)
 
 
@@ -149,6 +154,7 @@ class MountManager:
     @new_thread("mount-patch_mcdr_config")
     def patch_mcdr_config(self, slot: MountSlot):
         # MCDR v2.7 provided api to modify config
+        logger().info("Patching mcdr config...")
         current_plg_dirs = psi.get_mcdr_config()['plugin_directories']
         prev_added_plg_dir = self.current_slot.plg_dir
         if prev_added_plg_dir not in ['', None, '.']:
@@ -161,14 +167,14 @@ class MountManager:
                 current_plg_dirs.append(slot.plg_dir)
             except ValueError:
                 pass
-        psi.modify_mcdr_config(
-            changes={
-                'working_directory': slot.path,
-                'start_command': slot._config.start_command,
-                'handler': slot._config.handler,
-                'plugin_directories': current_plg_dirs
-            }
-        )
+        changes = {
+            'working_directory': slot.path,
+            'start_command': slot._config.start_command,
+            'handler': slot._config.handler,
+            'plugin_directories': current_plg_dirs
+        }
+        debug(f"mcdr config changes is: {changes}")
+        psi.modify_mcdr_config(changes=changes)
 
     def request_operation(self, mode: str, source: CommandSource, path: Optional[str] = None, with_confirm=False):
         pass
@@ -176,7 +182,7 @@ class MountManager:
     @single_op(Operation.REQUEST_MOUNT)
     def request_mount(self, source: CommandSource, path: str, with_confirm: bool = False):
         global current_op
-        logger().debug("Received mount request, evaluating...")
+        debug("Received mount request, evaluating...")
 
         if path == self.current_slot.path:
             source.reply(rtr('error.is_current_mount'))
@@ -212,6 +218,7 @@ class MountManager:
             self.next_slot = None
             return
 
+        debug("Mount request accepted, waiting for confirmation...")
         current_op = Operation.REQUEST_MOUNT
         text = RTextList(
             RText(rtr("info.mount_request", server_path=self.next_slot.path), color=RColor.yellow),
@@ -224,6 +231,7 @@ class MountManager:
 
     @single_op(Operation.REQUEST_RESET)
     def request_reset(self, source: CommandSource):
+        debug("Received reset request, evaluating...")
         global current_op
         # check for operation here
         if self.current_slot.reset_path in ['', None, '.'] \
@@ -234,6 +242,7 @@ class MountManager:
         if self.current_slot.reset_type not in ['full', 'region']:
             source.reply(rtr('error.reset.invalid_type'))
             return
+        debug("Reset request accepted, waiting for confirmation...")
         current_op = Operation.REQUEST_RESET
         text = RTextList(
             RText(rtr("info.reset_request", reset_path=self.current_slot.reset_path), color=RColor.yellow),
@@ -245,6 +254,7 @@ class MountManager:
         source.reply(text)
 
     def confirm_operation(self, source: CommandSource):
+        debug("Received confirm request, evaluating...")
         if current_op is Operation.REQUEST_RESET:
             self._do_reset(source, self.current_slot)
         elif current_op is Operation.REQUEST_MOUNT:
@@ -257,6 +267,7 @@ class MountManager:
     @single_op(Operation.RESET)
     @need_restart(reason=rtr('info.countdown_reason.reset'))
     def _do_reset(self, source: CommandSource, slot: MountSlot):
+        debug(f"Resetting current slot {slot.path}...")
         global current_op
         current_op = Operation.RESET
         ResetHelper.reset(slot.path, slot._config.reset_path, slot._config.reset_type)
@@ -265,6 +276,7 @@ class MountManager:
     @single_op(Operation.MOUNT)
     @need_restart(reason=rtr('info.countdown_reason.mount'))
     def _do_mount(self, source: CommandSource, slot: MountSlot):
+        debug(f"Mounting slot {slot.path}...")
         global current_op
         # do the mount
         current_op = Operation.MOUNT
@@ -277,6 +289,7 @@ class MountManager:
 
     @single_op(Operation.IDLE)
     def abort_operation(self, source: CommandSource):
+        debug("Received abort request, evaluating...")
         global current_op
         current_op = Operation.IDLE
         if not isinstance(self.next_slot, MountSlot):
@@ -288,6 +301,7 @@ class MountManager:
 
     @new_thread('mount-list')
     def list_servers(self, src: CommandSource, page: int = 1):
+        debug(f"Received list request for page {page}")
         list_size = self._config.list_size
         available_servers = self._config.available_servers
         max_page = math.ceil(len(available_servers) / list_size)
@@ -344,6 +358,7 @@ class MountManager:
             return self._config.__getattribute__(config_key)
 
     def set_config(self, src: CommandSource, config_key, config_value):
+        debug(f"Setting config [{config_key}] to [{config_value}]")
         assert hasattr(self._config, config_key)
         self._config.__setattr__(name=config_key, value=config_value)
         self._config.save()
@@ -356,6 +371,7 @@ class MountManager:
         del slot_instance
 
     def edit_path_config(self, src, path: CommandSource, key: str, value):
+        debug(f"Editing path({path}) config [{key}] to [{value}]")
         slot_instance = MountSlot(path)
         src.reply(slot_instance.edit_config(key, value))
         self.current_slot.load_config()
