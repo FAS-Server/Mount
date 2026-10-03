@@ -120,3 +120,12 @@ Unload cancels pending sessions and lets an executor finish recovery. Reload dur
 execution reuses that executor's manager; reload again after completion to load new
 instance configuration. File-based occupied_by retains its pre-existing cross-instance
 TOCTOU limitation. Merge, release and production-world operations are outside this change.
+## 列表与投票展示补充 / List and vote presentation
+
+列表正文使用服务器目录名；重名以配置顺序编号消歧。按钮使用完整 SHA-256 路径令牌，后台仍精确匹配配置路径，手动输入完整路径继续兼容。令牌目标移除后拒绝执行。正文区分置顶、当前、可用、占用、未检查及目录/配置失效；边界翻页不可点击，无效页码返回第 1 页。任一活跃度不可验证时，整体降级为置顶加配置顺序并说明原因，不隐藏不可用项。
+
+List text uses directory names, with configured-order numbers for duplicates. Buttons use full SHA-256 path tokens resolved to exact configured paths; manual full paths remain supported. Removed token targets are rejected. Rows distinguish pinned/current/available/occupied/unchecked/missing/invalid states. Boundary navigation is inactive; invalid pages return to page 1. Untrusted activity falls back to pinned then configured order with an explicit explanation, preserving unavailable entries.
+
+投票创建广播包含实际比例、赞成门槛、冻结人数、剩余时间及进出规则。重置创建广播与 status 在赞成按钮之前显示本轮预检得到的模式、世界、模板名称和 full/region 玩家数据后果；不增加投票前确认。
+
+Vote creation broadcasts include ratio, threshold, frozen electorate, remaining time and join/leave rules. Reset broadcasts and status show the preflight scope (mode, worlds, template name and full/region player-data consequences) before Yes buttons, without adding confirmation before voting.

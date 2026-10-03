@@ -16,6 +16,7 @@ class VoteSession:
     request_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     created: float = field(default_factory=time.monotonic)
     votes: dict = field(default_factory=dict)
+    reset_scope: object = None
 
     @property
     def threshold(self):

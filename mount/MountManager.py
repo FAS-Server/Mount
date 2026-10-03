@@ -1,4 +1,5 @@
 import math
+import hashlib
 import os
 import time
 import uuid
@@ -76,6 +77,23 @@ class MountManager:
     def action_text(self, kind):
         return rtr('flow.action_' + kind)
 
+    def target_token(self, path):
+        return 'slot:' + hashlib.sha256(path.encode('utf-8')).hexdigest()
+
+    def resolve_target(self, target):
+        if target.startswith('slot:'):
+            return next((path for path in self.servers_as_list if self.target_token(path) == target), '')
+        return target
+
+    def target_name(self, path):
+        name = os.path.basename(os.path.normpath(path))
+        matches = [p for p in self.servers_as_list if os.path.basename(os.path.normpath(p)) == name]
+        return name + (' #'+str(matches.index(path)+1) if len(matches) > 1 and path in matches else '')
+
+    def reset_scope(self, slot):
+        _, template, present = ResetHelper.preflight(slot.path, slot.reset_path, slot.reset_type)
+        return rtr('flow.reset_scope', mode=slot.reset_type, worlds=', '.join(present), template=template.name)
+
     def restore_players(self):
         if self.closed:
             return
@@ -137,7 +155,7 @@ class MountManager:
             raise ValueError('busy')
 
     def request_mount(self, source, path, with_confirm=False):
-        self.request_vote(source, 'switch', path)
+        self.request_vote(source, 'switch', self.resolve_target(path))
 
     def request_reset(self, source):
         self.request_vote(source, 'reset', self.current_slot.path)
@@ -145,6 +163,7 @@ class MountManager:
     def request_vote(self, src, kind, target):
         try:
             target_slot = self.validate_target(kind, target)
+            scope = self.reset_scope(target_slot) if kind == 'reset' else None
             with self.lock:
                 self.available()
                 if self.vote:
@@ -161,17 +180,19 @@ class MountManager:
                 self.vote = VoteSession(kind, target, src.player, roster,
                     getattr(self._config, kind + '_ratio'), self._config.vote_timeout)
                 vote = self.vote
+                vote.reset_scope = scope
                 self.timer = Timer(vote.timeout, self.expire_vote, [vote.request_id])
                 self.timer.daemon = True
                 self.timer.start()
             self.show_status(src, vote.request_id)
             psi.broadcast(RTextList(rtr('flow.vote_started', actor=vote.owner,
-                action=self.action_text(kind), target=target, id=vote.request_id), ' ',
+                action=self.action_text(kind), target=self.target_name(target), id=vote.request_id,
+                ratio=vote.ratio*100, required=vote.threshold, total=len(vote.roster),
+                seconds=max(0, math.ceil(vote.created+vote.timeout-time.monotonic()))),
+                RTextList('\n', scope) if scope is not None else '', ' ',
                 self.button('yes', 'vote '+vote.request_id+' yes'), ' ',
                 self.button('no', 'vote '+vote.request_id+' no'), ' ',
                 self.button('progress', 'status '+vote.request_id)))
-            if kind == 'reset':
-                self.reset_summary(src, target_slot)
         except (ValueError, ResourceWarning) as exc:
             self.message(src, str(exc) if isinstance(exc, ValueError) else 'invalid_target')
 
@@ -196,9 +217,10 @@ class MountManager:
             if not vote or request_id and vote.request_id != request_id:
                 self.message(src, 'stale')
                 return
-            text = RTextList(rtr('flow.status', id=vote.request_id, action=self.action_text(vote.kind), target=vote.target,
+            text = RTextList(rtr('flow.status', id=vote.request_id, action=self.action_text(vote.kind), target=self.target_name(vote.target),
                 actor=vote.owner, yes=vote.yes, required=vote.threshold, total=len(vote.roster),
                 no=len(vote.votes)-vote.yes, seconds=max(0, math.ceil(vote.created+vote.timeout-time.monotonic()))),
+                RTextList('\n', vote.reset_scope) if vote.reset_scope is not None else '',
                 ' ', self.button('yes', 'vote ' + vote.request_id + ' yes'),
                 ' ', self.button('no', 'vote ' + vote.request_id + ' no'))
             if self.identity(src) == vote.owner or src.has_permission(self._config.cancel_permission):
@@ -251,8 +273,7 @@ class MountManager:
     confirm_operation = show_status
 
     def reset_summary(self, src, slot):
-        _, template, present = ResetHelper.preflight(slot.path, slot.reset_path, slot.reset_type)
-        self.message(src, 'reset_scope', mode=slot.reset_type, worlds=', '.join(present), template=template.name)
+        src.reply(self.reset_scope(slot))
 
     @staticmethod
     def slot_contract(slot):
@@ -262,7 +283,7 @@ class MountManager:
         if not self.can_force(src):
             self.message(src, 'permission')
             return
-        target = target or self.current_slot.path
+        target = self.resolve_target(target) if target else self.current_slot.path
         try:
             target_slot = self.validate_target(kind, target)
             with self.lock:
@@ -278,7 +299,7 @@ class MountManager:
                 self.force_timer.daemon = True
                 self.force_timer.start()
                 old = self.force.vote_id or '-'
-            src.reply(RTextList(rtr('flow.force_summary', action=self.action_text(kind), target=target, id=request_id, old=old),
+            src.reply(RTextList(rtr('flow.force_summary', action=self.action_text(kind), target=self.target_name(target), id=request_id, old=old),
                                ' ', self.button('confirm', 'force confirm ' + request_id),
                                ' ', self.button('cancel_force', 'cancel ' + request_id)))
             if kind == 'reset':
@@ -490,49 +511,70 @@ class MountManager:
             psi.broadcast(rtr('flow.cancelled', id=old))
 
     def list_servers(self, src, page=1):
-        views, slots = [], {}
+        views, slots, reasons = [], {}, {}
+        degraded = False
         for path in self.servers_as_list:
             try:
                 if not os.path.isdir(path):
                     raise ValueError('missing path')
                 slot = MountSlot(path)
-                slots[path] = slot
-                score = slot.stats.player_time_ns_v2 if slot.stats.schema_version == 2 else 0
+                score = slot.stats.player_time_ns_v2
+                if slot.stats.schema_version != 2 or type(score) not in (int, float) or not math.isfinite(score) or score < 0:
+                    score, degraded = 0, True
                 views.append((path, max(0, score)))
+                slots[path] = slot
             except Exception:
+                reasons[path] = 'missing' if not os.path.isdir(path) else 'invalid'
+                degraded = True
                 views.append((path, 0))
-        views = order_slots(views, self._config.pinned_servers, self._config.list_order)
+        views = order_slots(views, self._config.pinned_servers,
+                            'configured' if degraded else self._config.list_order)
         size = self._config.list_size
         if not isinstance(size, int) or size <= 0:
             size = 15
         pages = max(1, math.ceil(len(views)/size))
-        page = max(1, min(pages, int(page)))
+        try:
+            page = int(page)
+        except (ValueError, TypeError):
+            page = 0
+        if not 1 <= page <= pages:
+            page = 1
+            self.message(src, 'page_corrected')
         src.reply(rtr('list.title'))
+        if degraded and self._config.list_order == 'activity':
+            self.message(src, 'activity_fallback')
         for path, _ in views[(page-1)*size:page*size]:
             slot, current = slots.get(path), path == self.current_slot.path
-            row = RTextList(path, ' ')
+            row = RTextList(self.target_name(path), ' ')
+            if path in self._config.pinned_servers:
+                row.append(rtr('flow.pinned'), ' ')
+            if current:
+                row.append(rtr('flow.current'), ' ')
             if slot:
                 row.append(slot.desc, ' ')
-                if current and slot.reset_path:
+                reason = ('unchecked' if not slot.checked else 'occupied'
+                          if slot.occupied_by and (not current or slot.occupied_by != self._config.mount_name)
+                          else 'available')
+                row.append(rtr('flow.'+reason), ' ')
+                if current and slot.reset_path and reason == 'available':
                     row.append(self.button('reset', 'reset'))
-                elif not current and slot.checked and not slot.occupied_by:
-                    row.append(self.button('switch', 'switch '+path))
-                else:
-                    row.append(rtr('flow.unavailable'))
+                elif not current and reason == 'available':
+                    row.append(self.button('switch', 'switch '+self.target_token(path)))
             else:
-                row.append(rtr('flow.unavailable'))
+                row.append(rtr('flow.'+reasons[path]))
             if current and self.can_backup(src):
                 row.append(' ', self.button('backup', 'backup'))
             src.reply(row)
         if not views:
             src.reply(rtr('list.empty'))
-        src.reply(RTextList(self.button('previous', 'list '+str(max(1,page-1))),
-            ' {}/{} '.format(page,pages), self.button('next', 'list '+str(min(pages,page+1)))))
+        src.reply(RTextList(self.button('previous', 'list '+str(page-1)) if page > 1 else rtr('flow.previous'),
+            ' {}/{} '.format(page,pages), self.button('next', 'list '+str(page+1)) if page < pages else rtr('flow.next')))
         if self.can_force(src):
             src.reply(RTextList(rtr('flow.management'), ' ', self.button('force_reset', 'force reset')))
             for path, _ in views:
                 if path != self.current_slot.path:
-                    src.reply(self.button('force_switch', 'force switch '+path))
+                    src.reply(RTextList(self.target_name(path), ' ',
+                        self.button('force_switch', 'force switch '+self.target_token(path))))
 
     def get_config(self, key, src=None):
         value = getattr(self._config, key)

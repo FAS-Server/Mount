@@ -4,6 +4,7 @@ Run with the same Python that has MCDR installed. No Java/world downloads,
 network listener, production paths, or background service are used.
 """
 import json
+import os
 import queue
 import re
 import shutil
@@ -41,12 +42,13 @@ for line in sys.stdin:
         _, name, command = line.split(' ',2)
         emit('<'+name+'> '+command)
     elif line.startswith('tellraw '):
-        emit('TEST_REPLY '+line+' PLAIN '+plain(json.loads(line.split(' ',2)[2])))
+        emit('TEST_REPLY '+line+' PLAIN '+plain(json.loads(line.split(' ',2)[2])).replace(chr(10),' | '))
 '''
 
 
 def main():
     repository = Path(__file__).resolve().parents[1]
+    language = sys.argv[1] if len(sys.argv) > 1 else 'en_us'
     sys.path.insert(0, str(repository))
     with tempfile.TemporaryDirectory(prefix='mount-isolated-') as temporary:
         root = Path(temporary)
@@ -72,12 +74,13 @@ def main():
             for slot in (current,target):
                 (slot/'mount.json').rename(slot/MOUNTABLE_CONFIG)
         config.update({'working_directory':str(current),'start_command':start_command,
-                       'handler':'vanilla_handler','language':'en_us','check_update':False,
-                       'advanced_console':False})
+                       'handler':'vanilla_handler','language':language,'check_update':False,
+                       'advanced_console':False, 'encoding':'utf-8', 'decoding':'utf-8'})
         yaml.dump(config,config_path)
         (root/CONFIG_NAME).parent.mkdir(parents=True, exist_ok=True)
         (root/CONFIG_NAME).write_text(json.dumps({'current_server':str(current),
             'available_servers':[str(current),str(target)],'servers_path':[str(root/'unused')],
+            'pinned_servers':[str(current)],
             'overwrite_path':'','mount_name':'isolated','vote_cooldown':0,
             'force_players':['Admin'],'force_console':False,
             'backup_root':str(root/'backups'),'start_timeout':10,'stop_timeout':10}),encoding='utf-8')
@@ -89,6 +92,7 @@ def main():
             archive.write(repository/'mcdreforged.plugin.json','mcdreforged.plugin.json')
         process = subprocess.Popen([sys.executable,'-m','mcdreforged','start'],cwd=root,
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
+            env=dict(os.environ, PYTHONIOENCODING='utf-8'),
             text=True,encoding='utf-8',errors='replace')
         lines, output = queue.Queue(), []
         def read():
@@ -119,39 +123,59 @@ def main():
             raise AssertionError('Missing '+pattern+'\n'+''.join(output[-40:]))
         try:
             wait(r'3 of a max of 20 players online')
+            send('testchat Alice !!mount list')
+            wait(r'PLAIN .*'+('Available' if language == 'en_us' else '可用'))
+            navigation = wait(r'TEST_REPLY tellraw Alice .*1/1').string
+            assert 'clickEvent' not in navigation
             send('testchat Alice !!mount switch '+str(target))
-            vote_id = wait(r'Alice started switch vote.*Request ([a-f0-9]{32})')[1]
+            creation = wait(r'Alice started switch vote.*Request ([a-f0-9]{32})' if language == 'en_us'
+                            else r'Alice 发起切换投票.*请求 ([a-f0-9]{32})')
+            vote_id = creation[1]
+            assert '60.0%' in creation.string and '2/3' in creation.string
             send('testchat Alice !!mount vote '+vote_id+' yes')
             send('testchat Bob !!mount vote '+vote_id+' yes')
-            wait(r'switch request '+vote_id+r'.*Startup verified')
+            wait(r'switch request '+vote_id+r'.*Startup verified' if language == 'en_us'
+                 else r'切换 请求 '+vote_id+r'.*已验证启动完成')
             assert json.loads((root/CONFIG_NAME).read_text())['current_server']==str(target)
+            send('testchat Alice !!mount reset')
+            reset_id = wait(r'Alice started reset vote.*Request ([a-f0-9]{32})' if language == 'en_us'
+                            else r'Alice 发起重置投票.*请求 ([a-f0-9]{32})')[1]
+            send('testchat Bob !!mount status '+reset_id)
+            wait(r'TEST_REPLY tellraw Bob .*PLAIN .*'+('Reset mode region' if language == 'en_us' else '重置模式 region'))
+            send('testchat Alice !!mount cancel '+reset_id)
+            wait(r'Vote '+reset_id+r' cancelled' if language == 'en_us' else r'投票 '+reset_id+r' 已取消')
             send('!!mount backup')
-            wait(r'Server is stopping briefly')
+            wait(r'Server is stopping briefly' if language == 'en_us' else r'服务器将短暂停止')
             send('!!MCDR plugin reload mount')
-            backup_id = wait(r'backup request .*verified backup ([a-f0-9]{32}).*Startup verified')[1]
+            backup_id = wait(r'backup request .*verified backup ([a-f0-9]{32}).*Startup verified' if language == 'en_us'
+                             else r'备份 请求 .*已校验备份 ([a-f0-9]{32}).*已验证启动完成')[1]
             assert (root/'backups'/backup_id/'manifest.json').is_file()
             send('testchat Admin !!mount force reset')
-            force_id = wait(r'Force reset:.*Request ([a-f0-9]{32})')[1]
+            force_id = wait(r'Force reset:.*Request ([a-f0-9]{32})' if language == 'en_us'
+                            else r'强制重置：.*请求 ([a-f0-9]{32})')[1]
             send('testchat Admin !!mount force confirm '+force_id)
-            wait(r'reset request '+force_id+r'.*Startup verified')
+            wait(r'reset request '+force_id+r'.*Startup verified' if language == 'en_us'
+                 else r'重置 请求 '+force_id+r'.*已验证启动完成')
             assert (target/'world'/'level.dat').read_bytes()==b'disposable-template'
             assert (target/'world'/'playerdata'/'Alice.dat').read_bytes()==b'player'
             slot_config = json.loads((target/MOUNTABLE_CONFIG).read_text())
             slot_config['reset_type'] = 'full'
             (target/MOUNTABLE_CONFIG).write_text(json.dumps(slot_config))
             send('testchat Admin !!mount force reset')
-            force_id = wait(r'Force reset:.*Request ([a-f0-9]{32})')[1]
+            force_id = wait(r'Force reset:.*Request ([a-f0-9]{32})' if language == 'en_us'
+                            else r'强制重置：.*请求 ([a-f0-9]{32})')[1]
             send('testchat Admin !!mount force confirm '+force_id)
-            wait(r'reset request '+force_id+r'.*Startup verified')
+            wait(r'reset request '+force_id+r'.*Startup verified' if language == 'en_us'
+                 else r'重置 请求 '+force_id+r'.*已验证启动完成')
             assert not (target/'world'/'playerdata').exists()
             send('!!MCDR plugin reload mount')
             wait(r'3 of a max of 20 players online')
             send('stop')
             wait(r'bye')
             process.wait(timeout=20)
-            assert process.returncode==0
+            assert process.returncode==0, 'Exit '+str(process.returncode)+'\n'+''.join(output[-25:])
             assert not any('Error loading plugin' in line or 'Error when executing' in line for line in output)
-            print('PASS: real MCDR load, snapshot, vote, spaced-path switch, backup, full/region reset, reload during execution, shutdown')
+            print('PASS '+language+': real MCDR load, list, snapshot, vote, reset scope for other voters, spaced-path switch, backup, full/region reset, reload during execution, shutdown')
         finally:
             if process.poll() is None:
                 import psutil
@@ -162,6 +186,11 @@ def main():
                 process.wait(timeout=10)
             reader.join(timeout=10)
             (repository/'isolated-mcdr.log').write_text(''.join(output),encoding='utf-8')
+            rendered = [line.split(' PLAIN ', 1)[1].strip() for line in output if ' PLAIN ' in line
+                        and ('started switch vote' in line or '发起切换投票' in line
+                             or 'Reset mode' in line or '重置模式' in line
+                             or '[Available]' in line or '[可用]' in line)]
+            (repository/('rendered-'+language+'.txt')).write_text('\n'.join(dict.fromkeys(rendered)), encoding='utf-8')
 
 
 if __name__ == '__main__':
