@@ -1,4 +1,8 @@
 .idea
+.venv/
+.venv-*/
+.pytest_cache/
+isolated-mcdr.log
 *.mcdr
 *.pyz
 */__pycache__/

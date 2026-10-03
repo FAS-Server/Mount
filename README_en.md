@@ -79,3 +79,7 @@
 - add file with name `.mount-ignore` under folder in auto-detect folder to not detect that folder
 - by editing config file, you can add any server in any folder as mountable server
 - the actual config file must be json format, so remove the comments starting with `//` from above config sample
+
+## Voting, backup and ordering upgrade
+
+Switch/reset now use online-player voting. Authorized users can back up directly; configured force users personally confirm their action. Lists support pinning and optional trusted activity ordering. See [migration and commands](docs/migration.md) and [isolated verification](docs/verification.md).

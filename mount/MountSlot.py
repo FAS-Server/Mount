@@ -1,7 +1,6 @@
 import os
 import time
-from asyncio import Event
-from threading import Lock, Thread
+from threading import Event, Lock, RLock, Thread, current_thread
 from typing import Callable
 
 from jproperties import Properties
@@ -14,21 +13,15 @@ from .utils import logger, psi, rtr, debug
 class StatsChecker(Thread):
     def __init__(self, interval: int, cb: Callable[[], None]):
         super().__init__()
-        self.setDaemon(True)
-        self.setName(self.__class__.__name__)
+        self.daemon = True
+        self.name = self.__class__.__name__
         self._report_time = time.time()
         self.stop_event = Event()
         self.interval = interval
         self._callback = cb
 
     def run(self):
-        while True: # loop until stop
-            while True: # # loop for report
-                if self.stop_event.wait(1):
-                    return
-                if time.time() - self._report_time > self.interval:
-                    break
-            self._report_time = time.time()
+        while not self.stop_event.wait(self.interval):
             self._callback()
 
     def stop(self):
@@ -37,13 +30,14 @@ class StatsChecker(Thread):
 class MountSlot:
     def __init__(self, path: str):
         self.path = path
+        self.__stats_lock = RLock()
         self.load_config()
         self.properties = Properties()
         self.slot_lock = Lock()
-        self.__players = []
+        self.__players = set()
         self.__players_lock = Lock()
-        self.__stats_lock = Lock()
-        self.__stats_checker = StatsChecker(60, self.update_stats)
+        self.__stats_checker = None
+        self.__anchor = None
 
     @property
     def name(self) -> str:
@@ -58,11 +52,12 @@ class MountSlot:
 
     def load_config(self):
         debug(f'Loading slot config in {self.path}...')
-        self._config = psi.load_config_simple(
-            target_class=Config,
-            file_name=os.path.join(self.path, MOUNTABLE_CONFIG),
-            in_data_folder=False
-        )
+        with self.__stats_lock:
+            self._config = psi.load_config_simple(
+                target_class=Config,
+                file_name=os.path.join(self.path, MOUNTABLE_CONFIG),
+                in_data_folder=False
+            )
 
     def save_config(self):
         debug(f'Saving slot config in {self.path}...')
@@ -97,24 +92,33 @@ class MountSlot:
         debug(f'Locking {self.path}...')
         acquired = self.slot_lock.acquire(blocking=False)
         if acquired:
-            self.load_config()
-            if self._config.occupied_by in ["", None, mount_name]:
-                self._config.occupied_by = mount_name
-                self.save_config()
-                return
+            try:
+                self.load_config()
+                if self._config.occupied_by in ["", None, mount_name]:
+                    self._config.occupied_by = mount_name
+                    self.save_config()
+                    return
+            except BaseException:
+                self.slot_lock.release()
+                raise
+            self.slot_lock.release()
         raise ResourceWarning
 
     def release(self, mount_name: str):
         debug(f'Releasing slot {self.path}...')
-        self.load_config()
-        if self._config.occupied_by == mount_name:
-            self._config.occupied_by = ""
-            self.save_config()
-        self.slot_lock.release()
+        if not self.slot_lock.locked():
+            return
+        try:
+            self.load_config()
+            if self._config.occupied_by == mount_name:
+                self._config.occupied_by = ""
+                self.save_config()
+        finally:
+            self.slot_lock.release()
 
     def edit_config(self, key: str, value: str):
         debug(f'Editing slot config in {self.path}, [{key}]] set to [{value}]')
-        if key in [ 'stats' ]:
+        if key in ['stats', 'occupied_by']:
             return rtr('config.cannot_edit', key=rtr(f'config.slot.{key}'))
         if isinstance(self._config.__getattribute__(key), bool):
             value = value.lower()
@@ -129,52 +133,53 @@ class MountSlot:
         return rtr('config.set_value', key=rtr(f'config.slot.{key}'), value=self._config.__getattribute__(key))
 
     def on_player_join(self, player: str):
-        debug(f'Player {player} joined slot {self.path}, saving stats...')
-        with self.__players_lock:
+        with self.__stats_lock:
             self.update_stats()
-            self._config.stats.total_players = self._config.stats.total_players + 1
-            self.__players.append(player)
-            self.update_stats()
+            self.__players.add(player)
 
     def on_player_left(self, player: str):
-        debug(f'Player {player} left slot {self.path}, saving stats...')
-        try:
-            with self.__players_lock:
-                self.update_stats()
-                self.__players.remove(player)
-        except ValueError:
-            pass
+        with self.__stats_lock:
+            self.update_stats()
+            self.__players.discard(player)
+
+    def set_players(self, players):
+        with self.__stats_lock:
+            self.update_stats()
+            self.__players = set(players)
 
     def on_mount(self):
-        debug(f'slot {self.path} is mounted, saving stats...')
-        if not self.__stats_checker.is_alive:
-            with self.__stats_lock:
-                current = time.time_ns
-                self._config.stats.last_mount_ns = current
-                self.save_config()
-            debug(f'starting stats checker for slot {self.path}...')
+        with self.__stats_lock:
+            if self.__anchor is not None:
+                return
+            self.__anchor = time.monotonic_ns()
+            self._config.stats.last_mount_ns = time.time_ns()
+            self.__stats_checker = StatsChecker(60, self.update_stats)
             self.__stats_checker.start()
 
     def on_unmount(self):
-        debug(f'slot {self.path} is unmounted, saving stats...')
-        if self.__stats_checker.is_alive:
+        with self.__stats_lock:
             self.update_stats()
-            self.__stats_checker.stop()
+            self.__anchor = None
+            self.__players.clear()
+            checker = self.__stats_checker
+            if checker:
+                checker.stop()
+        if checker and checker is not current_thread():
+            checker.join()
 
 
     def update_stats(self):
-        debug(f'Updating stats in slot {self.path}...')
-        if not self.__stats_checker.is_alive:
-            return
         with self.__stats_lock:
-            current = time.time_ns()
-            prev = self._config.stats.last_mount_ns
-            p = len(self.__players)
-            t = current - prev
+            if self.__anchor is None:
+                return
+            current = time.monotonic_ns()
+            t = max(0, current - self.__anchor)
+            self.__anchor = current
             stats = self._config.stats
-            stats.last_mount_ns = current
-            stats.total_use_time = stats.total_use_time + t
-            stats.total_player_time = stats.total_player_time + t * p
+            stats.use_time_ns_v2 += t
+            stats.player_time_ns_v2 += t * len(self.__players)
+            # Statistics must not overwrite a freshly edited reset template,
+            # permissions/configuration or another instance's occupation.
+            self.load_config()
             self._config.stats = stats
-            debug(f'current stats: {stats}')
             self.save_config()
