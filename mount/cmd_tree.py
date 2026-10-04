@@ -55,7 +55,10 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
 
     def legacy_mount(src, target):
         suffix = ' --confirm'
-        confirmed = target.endswith(suffix)
+        # A configured complete path may itself end in the legacy flag.
+        # Resolve the exact input before treating any suffix as syntax.
+        exact = manager.resolve_target(target)
+        confirmed = exact not in manager.servers_as_list and target.endswith(suffix)
         if confirmed:
             target = target[:-len(suffix)]
         path = manager.resolve_target(target)
