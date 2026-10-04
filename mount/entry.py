@@ -14,6 +14,9 @@ manager: Optional[MountManager] = None
 def on_load(server: PluginServerInterface, prev_module):
     debug(f"plugin loaded")
     global manager
+    previous = getattr(prev_module, "manager", None)
+    if previous:
+        previous.current_slot.on_unmount()
     config: MountConfig = MountConfig.load()
     manager = MountManager(config=config)
     register_commands(server, manager)
@@ -26,7 +29,7 @@ def on_unload(server: PluginServerInterface):
     debug(f"plugin unloaded")
     if not manager:
         return
-    if manager.current_slot and server.is_server_running():
+    if manager.current_slot:
         manager.current_slot.on_unmount()
 
 

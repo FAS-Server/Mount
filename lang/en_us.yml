@@ -1,4 +1,18 @@
 mount:
+  flow:
+    switch: '[Switch]'
+    reset: '[Reset]'
+    previous: '[Previous]'
+    next: '[Next]'
+    pinned: '[Pinned]'
+    current: '[Current]'
+    available: '[Available]'
+    occupied: '[Unavailable: occupied]'
+    unchecked: '[Unavailable: unchecked]'
+    missing: '[Unavailable: directory missing]'
+    invalid: '[Unavailable: invalid configuration]'
+    page_corrected: 'Invalid page; showing page 1.'
+    activity_fallback: 'Activity data is untrusted; using configured order after pinned servers.'
   help_msg:
     welcome: "This MCDR server has multi MC server support by mount plugin, type §e!!mount§r to get help"
     click_to_fill: "Click to fill {cmd}"

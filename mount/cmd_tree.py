@@ -53,6 +53,17 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
         return Text('slot_path').requires(lambda src, ctx: ctx['slot_path'] in manager.servers_as_list,
                                           lambda src, ctx: rtr('error.invalid_mount_path'))
 
+    def legacy_mount(src, target):
+        suffix = ' --confirm'
+        confirmed = target.endswith(suffix)
+        if confirmed:
+            target = target[:-len(suffix)]
+        path = manager.resolve_target(target)
+        if path not in manager.servers_as_list:
+            src.reply(rtr('error.invalid_mount_path'))
+            return
+        manager.request_mount(src, path, with_confirm=confirmed)
+
     config_node = Literal({"--config", "-cfg"}).runs(lambda src: get_config_help(src))\
         .requires(lambda src: src.has_permission(3), lambda src: src.reply(rtr('error.perm_deny'))).then(
         get_slot_node().runs(
@@ -75,7 +86,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
         Literal({'--list', '-l'}).runs(
             lambda src, ctx: manager.list_servers(src)
         ).then(
-            Number('page').runs(lambda src, ctx: manager.list_servers(src, ctx['page']))
+            GreedyText('page').runs(lambda src, ctx: manager.list_servers(src, ctx['page']))
         )
     ).then(
         Literal('--abort').runs(lambda src, ctx: manager.abort_operation(src))
@@ -84,13 +95,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         Literal({'--reload', '-r'}).runs(lambda src, ctx: manager.reload(src))
     ).then(
-        get_slot_node().runs(
-            lambda src, ctx: manager.request_mount(
-                src, ctx['slot_path'], with_confirm=False)
-        ).then(
-            Literal("--confirm")
-            .runs(lambda src, ctx: manager.request_mount(src, ctx['slot_path'], with_confirm=True))
-        )
+        GreedyText('mount_target').runs(lambda src, ctx: legacy_mount(src, ctx['mount_target']))
     )
     server.register_command(main_node)
     server.register_help_message(COMMAND_PREFIX, rtr("help_msg.brief"))

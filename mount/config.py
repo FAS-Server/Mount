@@ -9,7 +9,7 @@ from .utils import debug, psi, rtr, setDebugNoCheck
 
 class MountConfig(Serializable):
     welcome_player: bool = True
-    short_prefix = True  # let !!m to be a short command
+    short_prefix: bool = True  # let !!m to be a short command
     servers_path: Union[str, List[str]] = [ "../servers" ]
     overwrite_path: str = "../servers/server.properties.overwrite"
 
@@ -21,6 +21,8 @@ class MountConfig(Serializable):
     mount_name: str = "MountDemo"
     list_size: int = 15
     debug: bool = False
+    pinned_servers: List[str] = []
+    list_order: str = 'configured'
 
     def migrate(self):
         need_save = False
@@ -44,6 +46,9 @@ class MountConfig(Serializable):
 
 
 class SlotStats(Serializable):
+    schema_version: int = 2
+    use_time_ns_v2: int = 0
+    player_time_ns_v2: int = 0
     last_mount_ns: int = -1
     total_use_time: int = 0
     total_player_time: int = 0
