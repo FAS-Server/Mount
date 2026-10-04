@@ -10,7 +10,8 @@
 切换默认 60%、重置默认 100%、60 秒超时。冻结在线分母，门槛向上取整，发起者
 必须显式投票，一人一票且不能改票。加入不增员、离开不降低门槛；已经离线的玩家
 不能继续投票。普通投票仅受信任玩家命令源可发起，控制台只看进度。
-同实例同类投票从上次终结起冷却 60 秒。
+同实例同类投票从上次终结起冷却 60 秒；比例、超时和冷却均可配置。
+无在线玩家或在线快照不可信时拒绝发起，不会自动通过。
 
 运行中加载、重载及切服后查询 `list` 恢复完整在线集合。只支持 vanilla/bukkit
 英文在线列表格式；超时、人数不匹配或其他 handler 安全拒绝投票，单次进出事件
@@ -33,7 +34,7 @@
 | `force_players`, `force_console` | `[]`, `false`；按认证玩家名精确匹配，名单不附带其他权限 |
 | `force_timeout` | `60` 秒，所有强制操作本人确认有效期 |
 | `backup_root` | `../mount-backups`；须与实例、源世界和重置模板隔离 |
-| `backup_worlds` | `world/world_nether/world_the_end`；可配置实例内相对路径 |
+| `backup_worlds` | `["world", "world_nether", "world_the_end"]`；可配置相对当前 MC 服务器目录的路径 |
 | `stop_timeout`, `start_timeout` | `60`, `120` 秒 |
 
 非法分页大小回退 15；非法比例、权限、计时或排序模式拒绝加载，修正配置后重载。
@@ -43,7 +44,8 @@
 ## 操作命令
 
 `!!mount switch <完整路径>` 支持空格。`reset` 发起当前服重置投票；
-`vote <id> yes|no` 投票，`status [id]` 查看，`cancel <id>` 由发起者或管理权限取消。
+`vote <id> yes|no` 投票，`status [id]` 查看，`cancel <id>` 由发起者或达到
+`cancel_permission`（默认 MCDR 3 级）的管理者取消。
 `list [page]` 先排序再分页，不可用目标保留显示。
 
 授权者看到独立 `backup` 按钮，点击直接开始，无确认、无投票、不切换或重置。
@@ -55,13 +57,15 @@
 启动命令发出不等于启动完成，结果分别报告文件操作与真实启动状态。
 备份结果仅向发起者及管理日志显示；掉线结果限本次运行期保存并在回服后补发。
 
-`force switch <完整路径>`、`force reset` 仅名单用户可用；均需
+`force switch <完整路径>`、`force reset` 默认仅名单玩家可用；控制台须启用
+`force_console`且具有 MCDR 4 级权限。均需
 `force confirm <id>` 本人确认。确认摘要绑定操作者、完整目标、配置与原投票 ID。
 确认前原投票继续；放弃、过期或原投票变化使摘要失效。确认不等待他人同意，
 也不能抢占执行中的操作。
 
 重置仅替换模板实际提供的默认三个世界。full 替换整个世界；region 仅保留
-主世界的 `playerdata/advancements/stats`，下界与末地整世界替换。重置不是备份，
+主世界`world`内的 `playerdata`、`advancements`、`stats`，其余主世界内容以模板替换；
+下界与末地整世界替换。模板缺失的世界保持原样，`backup_worlds`不改变重置范围。重置不是备份，
 中途磁盘失败可能留下部分替换的世界，无自动回滚，应使用人工备份恢复。
 
 卸载取消待投票/待确认，执行器协作收尾并恢复本次停下的服务器。
@@ -79,7 +83,9 @@ Use `switch <full path>` (spaces supported), `reset`, `vote <id> yes|no`, `statu
 electorate, rounded up; timeout and per-kind cooldown are 60 seconds. The initiator
 must vote explicitly. First votes are final; arrivals are excluded, departures
 do not lower the threshold, and offline players cannot cast new votes. Console
-can inspect votes but cannot initiate or vote.
+can inspect votes but cannot initiate or vote. Empty or untrusted snapshots refuse
+initiation. Ratios, timeout and cooldown are configurable. Vote owners or users meeting
+`cancel_permission` (default MCDR level 3) can cancel; force names grant no such management permission.
 
 Load/reload/startup queries `list`. Only supported vanilla/bukkit English output
 establishes a complete snapshot. Failure stays untrusted despite subsequent
@@ -111,15 +117,19 @@ backup or management-cancel permission. Every `force switch/reset` requires pers
 until confirmation; changing/ending it invalidates the summary. Execution cannot
 be preempted. Force confirmation binds owner, target, configuration and exact old vote.
 
-Reset replaces only worlds provided by the template. Full replaces whole worlds;
-region preserves playerdata/advancements/stats only in the main world. Nether/End
-are replaced entirely. Reset disk failures can leave partially replaced worlds;
+Console force requires both `force_console=true` and MCDR permission level 4.
+
+Reset considers only `world`, `world_nether`, `world_the_end` provided by the template;
+missing template worlds stay unchanged. Full replaces entire selected worlds;
+region preserves only `playerdata`, `advancements`, `stats` inside the main `world`,
+replacing its other contents from the template. Selected Nether/End worlds
+are replaced entirely. `backup_worlds` does not change reset scope. Reset disk failures can leave partially replaced worlds;
 there is no automatic rollback. Keep an independent backup for manual recovery.
 
 Unload cancels pending sessions and lets an executor finish recovery. Reload during
 execution reuses that executor's manager; reload again after completion to load new
 instance configuration. File-based occupied_by retains its pre-existing cross-instance
-TOCTOU limitation. Merge, release and production-world operations are outside this change.
+TOCTOU limitation.
 ## 列表与投票展示补充 / List and vote presentation
 
 列表正文使用服务器目录名；重名以配置顺序编号消歧。按钮使用完整 SHA-256 路径令牌，后台仍精确匹配配置路径，手动输入完整路径继续兼容。令牌目标移除后拒绝执行。正文区分置顶、当前、可用、占用、未检查及目录/配置失效；边界翻页不可点击，无效页码返回第 1 页。任一活跃度不可验证时，整体降级为置顶加配置顺序并说明原因，不隐藏不可用项。
