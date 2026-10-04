@@ -96,8 +96,6 @@
 
 ## 列表和统计
 
-`pinned_servers` 手动置顶优先；`list_order` 为 `configured` 或 `activity`。可信玩家时间用于活跃度排序，同分稳定，先排序再分页；不可用目标仍显示状态与原因。统计使用单调时钟累计，玩家去重仅限运行期，中途加载只记录随后观察到的事件。
+`pinned_servers` 手动置顶优先；`list_order` 默认 `configured`，可设 `activity` 按新可信玩家时间排序。同分稳定、先排序再分页，不可用服显示原因。旧可疑统计保留但不排行，运行期玩家去重，中途加载不代表完整玩家快照。公开按钮使用私密token，重名用编号消歧，支持含空格完整路径。切换/重置按钮采用上文投票流程。
 
-`!!mount --list [page]` 查看列表；`!!mount <完整路径或token>` 请求切换，`!!mount --reset` 请求重置，`!!mount --confirm` 确认当前请求，`!!mount --abort` 取消。完整目标优先解析，尾随 ` --confirm` 仅在输入不是完整已配置目标时作为确认参数。公开按钮使用token，重名显示编号，不公开绝对路径。
-
-安装版本1.0.0时按上面的格式创建配置，`servers_path` 必须为字符串数组。统计由插件生成；`schema_version: 2` 标识可信计时格式，`use_time_ns_v2`/`player_time_ns_v2` 为纳秒累计值，`last_mount_ns` 为挂载锚点，不维护永久玩家名单。
+详见[迁移](docs/migration.md)和[验证边界](docs/verification.md)。客户端渲染/点击、认证玩家和生产环境仍需验证。
