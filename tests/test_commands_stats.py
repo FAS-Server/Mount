@@ -40,12 +40,16 @@ def command_root(m):
     node = holder[0]
     if hasattr(node, 'execute'):
         return node
-    # MCDR 2.16 separated traversal and callback invocation. Exercise both
-    # stages with its own synchronous invoker, without a mocked parser.
-    from mcdreforged.command.builder.callback import DirectCallbackInvoker
+    # MCDR 2.14 invokes callbacks synchronously and returns None. MCDR 2.16
+    # returns executions requiring its own invoker. Use the real traversal
+    # result instead of treating every version without execute as 2.16.
     class Root:
         def execute(self,source,command):
-            for execution in node._entry_execute(source,command):
+            executions = node._entry_execute(source,command)
+            if executions is None:
+                return
+            from mcdreforged.command.builder.callback import DirectCallbackInvoker
+            for execution in executions:
                 execution.scheduled_callback.invoke(DirectCallbackInvoker())
     return Root()
 
