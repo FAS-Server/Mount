@@ -17,6 +17,7 @@
   "archive_name": "Mount-v{version}.pyz",
   "resources": [
     "lang",
+    "docs",
     "LICENSE",
     "README.md",
     "README_en.md"
