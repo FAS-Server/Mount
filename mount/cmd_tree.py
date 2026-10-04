@@ -25,7 +25,7 @@ def register_commands(server, manager):
 
     def legacy(src, ctx):
         path = ctx['legacy']
-        if path.endswith(' --confirm'):
+        if manager.resolve_target(path) not in manager.servers_as_list and path.endswith(' --confirm'):
             path = path[:-10]
         manager.request_mount(src, path)
 
