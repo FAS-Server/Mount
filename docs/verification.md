@@ -1,8 +1,8 @@
-## 列表验证 / List verification
+## 操作与组合验证 / Operations and combined verification
 
-使用真实MCDR命令节点、RText及序列化API；仅PSI服务边界为隔离fixture。`tests/test_list.py` 保留原排序/统计/分页及QA-03语义，`tests/test_legacy.py` 增加旧命令请求/确认/取消、空格目标、真实双语文本和重载线程检查。`tests/command_api.py` 依真实2.7/2.14/2.16回调返回值执行，不mock parser。
+401U-12以401U-11为base，复用其统计停止接口、RLock配置保护及列表排序；本PR只增加操作权限/按钮、完整玩家快照、投票/强制确认、备份、执行互斥及失败收尾。Combined head includes the list ancestor. The operations diff does not reimplement ranking/statistics.
 
-Run from the repository root:
+真实MCDR 2.7/2.14/2.16各77项通过（退出码0），覆盖原工程66项与原QA11项语义；列表专属断言来自祖先，操作断言按代码块迁入。本轮工程复跑不代替QA独立复核。新SHA证据与完整命令/退出码见任务附件。服务边界为fixture，parser、RText、序列化及文件系统为真实API。
 
 ```powershell
 uv run --python 3.11 --with-requirements requirements-test-2.7.txt python -m pytest -q -s
@@ -10,8 +10,12 @@ uv run --python 3.11 --with-requirements requirements-test.txt --with mcdreforge
 uv run --python 3.11 --with-requirements requirements-test.txt --with mcdreforged==2.16.0 python -m pytest -q -s
 ```
 
-2.7/2.14/2.16各26项通过（退出码0），包括原QA9项列表探针；工程复跑不代替新SHA独立审查。测试覆盖默认配置顺序、手动置顶、活跃度与同分、排序先于分页、异常活跃度降级、全部不可用原因、完整token与隐私、边界按钮、空列表/非法页码/大小、重复加入离开、反复挂载与重载/卸载无统计线程残留。旧操作测试校验原请求状态及确认分派，不宣称执行器或磁盘操作可靠性已由本方向修复。
+涵盖冻结分母/取整、单人/无人、首票锁定、加入/离开、冷却、旧入口、权限隐藏/手输、force本人确认与旧vote_id、竞态至多一次、外部占用拒绝、完整快照失败/竞态/旧输出、文件摘要损坏/提交失败/容量/隔离/links、原停机/stop/start超时、reload/unload归属与线程收尾。QA-01/02真实双语范围和门槛广播保留；QA-03随列表祖先保留。
 
-Tests cover ordering, pagination, status reasons, privacy, exact targets, legacy dispatch and statistics lifecycle. Server/filesystem operation reliability belongs to the operations change. API/fixture passes do not establish client rendering or authenticated-player behavior.
+`tests/isolated_mcdr.py` 是真实MCDR进程加Python vanilla输出模拟，不能当Java或认证玩家证据。旧PR13的f981c3f Java19项只作历史；拆分组合必须重新运行并在任务附件绑定当前head，不能把旧结果写为新SHA通过。
 
-未验证 / Unverified: 客户端中英文渲染/点击、真实认证玩家统计、Paper/Bukkit、生产版本/配置。历史PR13 Java证据只属于原SHA，不作为本列表SHA重跑证据。保留旧操作失败、跨实例占用TOCTOU、非事务重置、历史退出及CI风险；无合并发布授权。
+Original history: 13c36ad first suite43; f981c3f revision66; old2.14 callback-helper failures; 7d8d83b compatibility fix; 91bd3dc documentation fix. Source snapshots/logs remain on original tasks and the migration archive. No failed assertions were removed to claim a pass.
+
+未验证 / Unverified: 认证玩家、非零list/join-left、客户端双语渲染/点击、实际玩家NBT full/region后果、掉线重连、Paper/Bukkit及生产配置。跨实例occupied_by TOCTOU、非事务重置部分失败、备份容量/结果留存、历史bye后非零退出无完整现场及CI artifact-v3/workflow权限风险保留。成功的新回归不能消除旧失败。
+
+No merge/release/production access. Client work remains with user coordination through Fairy; there is no persistent testing service. The API and Java test layers must be reported separately from independent acceptance.
