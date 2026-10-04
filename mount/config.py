@@ -23,6 +23,35 @@ class MountConfig(Serializable):
     debug: bool = False
     pinned_servers: List[str] = []
     list_order: str = 'configured'
+    switch_ratio: float = 0.6
+    reset_ratio: float = 1.0
+    vote_timeout: int = 60
+    vote_cooldown: int = 60
+    force_timeout: int = 60
+    backup_permission: int = 3
+    cancel_permission: int = 3
+    force_players: List[str] = []
+    force_console: bool = False
+    backup_root: str = '../mount-backups'
+    backup_worlds: List[str] = ['world', 'world_nether', 'world_the_end']
+    stop_timeout: int = 60
+    start_timeout: int = 120
+
+    def validate(self):
+        for key in ('switch_ratio', 'reset_ratio'):
+            value = getattr(self, key)
+            if isinstance(value, bool) or not 0 < value <= 1:
+                raise ValueError(key)
+        for key in ('vote_timeout', 'force_timeout', 'stop_timeout', 'start_timeout'):
+            if type(getattr(self, key)) is not int or getattr(self, key) <= 0:
+                raise ValueError(key)
+        if type(self.vote_cooldown) is not int or self.vote_cooldown < 0 or self.list_order not in ('configured', 'activity'):
+            raise ValueError('invalid vote cooldown or list order')
+        for key in ('backup_permission', 'cancel_permission'):
+            if type(getattr(self, key)) is not int or not 0 <= getattr(self, key) <= 4:
+                raise ValueError(key)
+        if type(self.list_size) is not int or self.list_size <= 0:
+            self.list_size = 15
 
     def migrate(self):
         need_save = False
@@ -42,6 +71,7 @@ class MountConfig(Serializable):
         config = psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
         setDebugNoCheck(config.debug)
         config.migrate()
+        config.validate()
         return config
 
 

@@ -102,7 +102,7 @@ def environment(tmp_path, monkeypatch):
     import mount.MountSlot as ms
     import mount.config as cfg
     import mount.entry as entry
-
+    monkeypatch.delattr(entry._lifecycle, 'owner', raising=False)
     from mount.constants import MOUNTABLE_CONFIG
     server = Server()
     monkeypatch.setattr(cfg, 'CONFIG_NAME', str(tmp_path/'instance.json'))
@@ -111,6 +111,10 @@ def environment(tmp_path, monkeypatch):
     config = cfg.MountConfig()
     config.current_server = str(tmp_path/'current')
     config.available_servers = [config.current_server, str(tmp_path/'target with spaces')]
+    config.backup_root = str(tmp_path/'backups')
+    config.vote_cooldown = 0
+    config.stop_timeout = config.start_timeout = 1
+    config.force_players = ['Admin']
     config.overwrite_path = ''
     for path in config.available_servers:
         Path(path, 'world').mkdir(parents=True)
@@ -122,7 +126,10 @@ def environment(tmp_path, monkeypatch):
         Path(path, 'template', 'world', 'level.dat').write_bytes(b'template')
         server.save_config_simple(slot, str(Path(path, MOUNTABLE_CONFIG)))
     manager = mm.MountManager(config)
+    manager.players.trusted = True
+    manager.players.players = {'Alice', 'Bob', 'Admin'}
     yield manager, server, Source
-    manager.current_slot.on_unmount()
-    manager.current_slot.release(manager._config.mount_name)
-    mm.current_op = mm.Operation.IDLE
+    if manager.worker:
+        manager.worker.join(5)
+        assert not manager.worker.is_alive()
+    manager.close()

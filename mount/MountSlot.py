@@ -92,24 +92,33 @@ class MountSlot:
         debug(f'Locking {self.path}...')
         acquired = self.slot_lock.acquire(blocking=False)
         if acquired:
-            self.load_config()
-            if self._config.occupied_by in ["", None, mount_name]:
-                self._config.occupied_by = mount_name
-                self.save_config()
-                return
+            try:
+                self.load_config()
+                if self._config.occupied_by in ["", None, mount_name]:
+                    self._config.occupied_by = mount_name
+                    self.save_config()
+                    return
+            except BaseException:
+                self.slot_lock.release()
+                raise
+            self.slot_lock.release()
         raise ResourceWarning
 
     def release(self, mount_name: str):
         debug(f'Releasing slot {self.path}...')
-        self.load_config()
-        if self._config.occupied_by == mount_name:
-            self._config.occupied_by = ""
-            self.save_config()
-        self.slot_lock.release()
+        if not self.slot_lock.locked():
+            return
+        try:
+            self.load_config()
+            if self._config.occupied_by == mount_name:
+                self._config.occupied_by = ""
+                self.save_config()
+        finally:
+            self.slot_lock.release()
 
     def edit_config(self, key: str, value: str):
         debug(f'Editing slot config in {self.path}, [{key}]] set to [{value}]')
-        if key in [ 'stats' ]:
+        if key in ['stats', 'occupied_by']:
             return rtr('config.cannot_edit', key=rtr(f'config.slot.{key}'))
         if isinstance(self._config.__getattribute__(key), bool):
             value = value.lower()
