@@ -52,5 +52,3 @@ def command_root(m):
             for execution in executions:
                 execution.scheduled_callback.invoke(DirectCallbackInvoker())
     return Root()
-
-
