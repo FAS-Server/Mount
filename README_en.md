@@ -47,8 +47,6 @@
   "mount_name": "MountDemo",
   // page size of pagination
   "list_size": 15,
-  "pinned_servers": [],
-  "list_order": "configured",
   // debug mode, will print more info
   "debug": false
 }

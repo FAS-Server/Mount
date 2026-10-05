@@ -47,8 +47,6 @@
   "mount_name": "MountDemo",
   // 分页大小
   "list_size": 15,
-  "pinned_servers": [],
-  "list_order": "configured",
   // 调试模式, 开启后会在控制台输出更多信息
   "debug": false
 }
