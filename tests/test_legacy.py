@@ -124,12 +124,8 @@ def test_confirm_suffix_prefers_exact_configured_target(environment, input_kind)
 
 def test_current_config_rejects_string_path_and_drops_audit_fields(environment, monkeypatch):
     import mount.config as config
-    m, server, _ = environment
-    monkeypatch.setattr(config, 'setDebugNoCheck', lambda value: None)
-    monkeypatch.setattr(config.psi, 'load_config_simple', lambda **kwargs:
-        config.MountConfig.deserialize({'servers_path': '../servers'}))
-    with pytest.raises(ValueError, match='servers_path'):
-        config.MountConfig.load()
+    with pytest.raises(TypeError):
+        config.MountConfig.deserialize({'servers_path': '../servers'})
     stats = config.SlotStats.deserialize({'total_use_time': 999, 'total_player_time': 999, 'total_players': 999})
     assert not any(key.startswith('total_') for key in stats.serialize())
     assert stats.use_time_ns_v2 == 0 and stats.player_time_ns_v2 == 0

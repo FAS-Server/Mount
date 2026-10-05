@@ -81,11 +81,6 @@
 - add file with name `.mount-ignore` under folder in auto-detect folder to not detect that folder
 - by editing config file, you can add any server in any folder as mountable server
 - the actual config file must be json format, so remove the comments starting with `//` from above config sample
-## Lists and statistics
-
-`pinned_servers` takes precedence. `list_order` defaults to `configured`; optional `activity` ranks newly accumulated trusted player time. Ties are stable and ordering precedes pagination. Unavailable servers show reasons. Legacy suspect totals stay for audit only. Runtime player deduplication does not claim a complete roster when loaded midway. Public actions use private tokens, duplicate names use numbers, and complete paths may contain spaces. Existing switch/reset requests, confirmation and cancellation keep their behavior.
-
-See [migration](docs/migration.md) and [verification boundaries](docs/verification.md). Client rendering/clicking, authenticated players and production remain unverified.
 ## List and statistics
 
 `pinned_servers` takes priority. `list_order` accepts `configured` or `activity`; trusted player time determines activity order, ties stay stable and sorting precedes pagination. Unavailable targets show their status and reason. Monotonic counters accumulate observed events; player deduplication lasts only for the running session.
