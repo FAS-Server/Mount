@@ -1,4 +1,4 @@
-﻿from mcdreforged.api.command import GreedyText, Literal, Text, Integer
+from mcdreforged.api.command import GreedyText, Literal, Text, Integer
 from mcdreforged.api.rtext import RAction, RText, RTextList
 
 from .config import SlotConfig
@@ -23,24 +23,17 @@ def register_commands(server, manager):
         return GreedyText('target').runs(lambda src, ctx:
             manager.request_force(src, kind, ctx['target']) if force else manager.request_mount(src, ctx['target']))
 
-    def legacy(src, ctx):
-        path = ctx['legacy']
-        if manager.resolve_target(path) not in manager.servers_as_list and path.endswith(' --confirm'):
-            path = path[:-10]
-        manager.request_mount(src, path)
-
     root = Literal({COMMAND_PREFIX, '!!m'} if manager.get_config('short_prefix') else COMMAND_PREFIX).runs(help_text)
     root.then(Literal('switch').then(target('switch')))
-    root.then(Literal({'reset', '--reset', '-rs'}).runs(manager.request_reset))
+    root.then(Literal('reset').runs(manager.request_reset))
     root.then(Literal({'list', '--list', '-l'}).runs(lambda src: manager.list_servers(src)).then(
         Integer('page').runs(lambda src, ctx: manager.list_servers(src, ctx['page']))))
-    root.then(Literal({'status', '--confirm'}).runs(lambda src: manager.show_status(src)).then(
+    root.then(Literal('status').runs(lambda src: manager.show_status(src)).then(
         Text('id').runs(lambda src, ctx: manager.show_status(src, ctx['id']))))
     root.then(Literal('vote').then(Text('id').then(
         Literal('yes').runs(lambda src, ctx: manager.cast_vote(src, ctx['id'], True))).then(
         Literal('no').runs(lambda src, ctx: manager.cast_vote(src, ctx['id'], False)))))
     root.then(Literal('cancel').then(Text('id').runs(lambda src, ctx: manager.cancel(src, ctx['id']))))
-    root.then(Literal('--abort').runs(lambda src: manager.cancel(src)))
     root.then(Literal('backup').requires(manager.can_backup).runs(manager.request_backup))
     force = Literal('force').requires(manager.can_force)
     force.then(Literal('switch').then(target('switch', True)))
@@ -61,6 +54,5 @@ def register_commands(server, manager):
             manager.edit_path_config(src, path, key, val)
     root.then(Literal({'--config', '-cfg'}).requires(lambda src: src.has_permission(3)).then(
         GreedyText('config').runs(config_command)))
-    root.then(GreedyText('legacy').runs(legacy))
     server.register_command(root)
     server.register_help_message(COMMAND_PREFIX, rtr('help_msg.brief'))

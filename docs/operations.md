@@ -1,11 +1,4 @@
-# Mount voting and backup migration / 投票与备份迁移
-
-## 行为变化
-
-旧配置可继续加载，新增字段采用安全默认值。`!!mount <完整路径>` 和尾随
-`--confirm` 均只创建切换投票；`--reset/-rs` 创建重置投票。单独 `--confirm`
-只显示投票进度，不投赞成票也不执行操作。`--abort` 仅取消有权取消的当前投票。
-新按钮全部绑定完整 UUID，旧会话按钮不会操作新会话。`!!m` 别名按原配置保留。
+## 投票与操作 / Voting and operations
 
 切换默认 60%、重置默认 100%、60 秒超时。冻结在线分母，门槛向上取整，发起者
 必须显式投票，一人一票且不能改票。加入不增员、离开不降低门槛；已经离线的玩家
@@ -20,9 +13,9 @@
 查询期间的进出事件合并进快照。服务器身份依赖其认证方式，离线模式同名冒用
 风险必须由部署者处理；不要将普通聊天字符串作为强制名单身份来源。
 
-## 新增配置
+## 操作配置
 
-在原 Mount 实例配置文件中设置，重载生效：
+在 Mount 实例配置文件中设置，重载生效：
 
 | 字段 | 默认值 / 说明 |
 |---|---|
@@ -35,7 +28,7 @@
 | `backup_worlds` | `["world", "world_nether", "world_the_end"]`；可配置相对当前 MC 服务器目录的路径 |
 | `stop_timeout`, `start_timeout` | `60`, `120` 秒 |
 
-非法比例、权限或计时拒绝加载，修正配置后重载。列表配置和统计迁移见[list migration](list-migration.md)。
+非法比例、权限或计时拒绝加载，修正配置后重载。
 
 ## 操作命令
 
@@ -70,10 +63,6 @@
 
 ## English
 
-Existing configuration loads with safe defaults. Legacy `<path>` and `<path> --confirm`
-start a switch vote; `--reset/-rs` starts a reset vote. Bare `--confirm` only shows
-progress. No legacy confirmation bypasses voting. `!!m` remains configurable.
-
 Use `switch <full path>` (spaces supported), `reset`, `vote <id> yes|no`, `status [id]`,
 `cancel <id>` and `list [page]`. Switch/reset require 60%/100% of the frozen online
 electorate, rounded up; timeout and per-kind cooldown are 60 seconds. The initiator
@@ -92,7 +81,7 @@ new query starts. A server that never responds stays untrusted until a new sessi
 Authentication remains the Minecraft server's responsibility; offline mode allows
 name impersonation. Force names match trusted player command sources.
 
-The table above lists operation fields. List configuration/statistics are documented in [list migration](list-migration.md).
+The table above lists operation configuration fields.
 
 `backup` is visible only to users meeting `backup_permission` (default 3), and
 executes immediately without voting or confirmation. It stops a running server,

@@ -13,13 +13,13 @@
 
 1. Deploy a MCDR instance(with MC server), and start it with this plugin
 
-2. Edit the main config according to [Config](#config), then reload this plugin (`!!mount -r` requires MCDR permission level 3)
+2. Edit the main config according to [Config](#config), then reload this plugin(by command `!!mount --reload` or other command provided by MCDR)
 
-3. Edit the file specified by `overwrite_path` in step 2. Setting server port and RCON options can provide a consistent experience
+3. Edit the file of `overwrite_path` which is configed at setp 2, Recommand to set up server port and rcon to get a consistent experience
 
-4. Add more MC servers under `servers_path`, reload, and use `!!mount -l` to list them. Check each instance's `mountable.json`; viewing or editing configuration with `!!mount --config <full path>` requires MCDR permission level 3. Set `checked` to `true` after checking the configuration
+4. Add more MC server into the `servers_path` at step 2, then you can use `!!mount list` to see them and edit their config according to [Config](#config), finally make sure set `checked` to true
 
-5. Type `!!mount -l` to check availability. An online player can click the vote-switch button to start a vote, then explicitly vote with its session-ID Yes button. Switching runs only after the threshold is reached
+5. Type `!!mount list` now, you can see available servers now, and then mount it
 
 6. For more command, type `!!mount` in game to get help
 
@@ -47,6 +47,8 @@
   "mount_name": "MountDemo",
   // page size of pagination
   "list_size": 15,
+  "pinned_servers": [],
+  "list_order": "configured",
   // debug mode, will print more info
   "debug": false
 }
@@ -66,8 +68,7 @@
   "occupied_by": "",
   // reset path for this server, '' and '.' means empty
   "reset_path": "",
-  // Only replace world/world_nether/world_the_end provided by reset_path; missing worlds stay unchanged
-  // full replaces entire selected worlds; region preserves only main-world playerdata/advancements/stats; selected Nether/End worlds are replaced entirely
+  // reset method, full for reset all, region for keep up player data(e.g. Parkour record)
   "reset_type": "full",
   // mcdr plugin dir for this server, '' and '.' means empty
   "plugin_dir": "",
@@ -80,29 +81,8 @@
 - add file with name `.mount-ignore` under folder in auto-detect folder to not detect that folder
 - by editing config file, you can add any server in any folder as mountable server
 - the actual config file must be json format, so remove the comments starting with `//` from above config sample
+## Voting, force and backup
 
-## Voting, backup and ordering upgrade
+For version2.0.0 create configuration in the format above; `servers_path` must be an array of strings. Use `!!mount switch <full path or token>`, `reset`, `vote <id> yes|no`, `status [id]` and authorized `cancel <id>`. Paths containing spaces or a trailing ` --confirm` are resolved as complete targets.
 
-After installing a version containing these features, ordinary switch/reset commands create online-player votes: defaults are 60%/100%, with a threshold of `ceil(N×ratio)` and the online electorate frozen at creation. The initiator must vote explicitly. First votes cannot change; arrivals are excluded and departures do not lower the threshold. Empty or untrusted player snapshots refuse initiation. Timeout and cooldown after each vote of the same kind ends both default to 60 seconds and are configurable.
-
-`backup_permission` defaults to MCDR level 3. Authorized backup clicks execute immediately without voting or confirmation. A running server is fully stopped before copying configured worlds and their player data, then startup is attempted; an originally stopped server stays stopped. Defaults are `world`, `world_nether`, `world_the_end`, with configurable relative paths. Plugin data, restore commands and automatic retention cleanup are excluded. Verified-copy success and server-startup success are reported separately.
-
-`force_players` defaults to empty and `force_console` to false. Force names grant neither backup nor management-cancel permission. Every `force switch/reset` requires the operator's own `force confirm <id>` within 60 seconds by default. The old vote continues before confirmation; target, configuration or old-session changes invalidate the summary. Running operations cannot be preempted. Backup/force entries are visible only to authorized users, and manually typed commands also check authorization.
-
-Lists default to configured order, with pins first and optional trusted activity sorting. Ties are stable, sorting precedes pagination, unavailable entries remain visible, and untrusted statistics trigger an explicit fallback. Legacy `<path>` and `<path> --confirm` create switch votes; bare `--confirm` only shows progress, `--reset/-rs` creates reset votes, and `!!m` is configurable. Failed resets may leave partial replacements with no automatic rollback; file-based cross-instance occupancy does not provide atomic locking.
-
-See [migration and commands](docs/migration.md) for configuration and migration details, and [verification evidence](docs/verification.md) for test layers, historical failures and unverified areas. Tests do not establish client or production acceptance or imply a formal release.
-
-
-## Lists and statistics
-
-`pinned_servers` takes precedence. `list_order` defaults to `configured`; optional `activity` ranks newly accumulated trusted player time. Ties are stable and ordering precedes pagination. Unavailable servers show reasons. Legacy suspect totals stay for audit only. Runtime player deduplication does not claim a complete roster when loaded midway. Public actions use private tokens, duplicate names use numbers, and complete paths may contain spaces. Switch/reset entries start votes as described above.
-
-See [migration](docs/migration.md) and [verification boundaries](docs/verification.md). Client rendering/clicking, authenticated players and production remain unverified.
-## List and statistics
-
-`pinned_servers` takes priority. `list_order` accepts `configured` or `activity`; trusted player time determines activity order, ties stay stable and sorting precedes pagination. Unavailable targets show their status and reason. Monotonic counters accumulate observed events; player deduplication lasts only for the running session.
-
-Use `!!mount --list [page]`, `!!mount <full path or token>`, `!!mount --reset`, `!!mount --confirm` and `!!mount --abort`. Exact configured targets take precedence over the trailing ` --confirm` parameter. Public buttons use tokens and duplicate names use numbered labels without exposing absolute paths.
-
-For version1.0.0 create configuration in the format above. `servers_path` must be an array of strings. Generated statistics use `schema_version: 2`, nanosecond `use_time_ns_v2`/`player_time_ns_v2` counters and the `last_mount_ns` anchor; no permanent player list is stored.
+Authorized `force switch/reset` requires personal `force confirm <id>`. Authorized `backup` executes directly, stops a running server before copying and verifying worlds, then restores its previous running state. See [operations](docs/operations.md) for configuration, full/region scope, permissions and failure handling.

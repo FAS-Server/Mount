@@ -54,15 +54,15 @@ def command_root(m):
     return Root()
 
 
-def test_actual_mcdr_parser_spaces_and_legacy(environment):
+def test_actual_mcdr_parser_spaces_and_explicit_vote(environment):
     m, server, _ = environment
     root, src = command_root(m), CommandUser()
     root.execute(src,'!!mount switch '+m.servers_as_list[1])
     request_id = m.vote.request_id
-    root.execute(src,'!!mount --confirm')
+    root.execute(src,'!!mount status')
     assert m.vote.request_id == request_id and m.vote.yes == 0 and server.stops == 0
-    root.execute(src,'!!m --abort')
-    root.execute(src,'!!mount '+m.servers_as_list[1]+' --confirm')
+    root.execute(src,'!!m cancel '+request_id)
+    root.execute(src,'!!mount switch '+m.servers_as_list[1])
     assert m.vote.target == m.servers_as_list[1] and m.vote.yes == 0
     root.execute(src,'!!mount list 0')
     assert src.replies
@@ -88,10 +88,10 @@ def test_restricted_help_list_and_manual_command(environment):
 
 
 
-def test_old_config_and_invalid_page_size(environment):
+def test_defaults_and_invalid_page_size(environment):
     m, server, Source = environment
     from mount.config import MountConfig
-    legacy = MountConfig.deserialize({'current_server':m.current_slot.path,'servers_path':'../servers'})
+    legacy = MountConfig.deserialize({'current_server':m.current_slot.path,'servers_path':['../servers']})
     assert legacy.force_players == [] and legacy.backup_permission == 3
     assert legacy.switch_ratio == .6 and legacy.reset_ratio == 1
     m._config.available_servers = []
@@ -99,3 +99,12 @@ def test_old_config_and_invalid_page_size(environment):
     m.list_servers(Source())
     m._config.list_size = -2
     m.list_servers(Source(),-10)
+
+
+def test_current_config_rejects_string_path_and_drops_audit_fields(environment, monkeypatch):
+    import mount.config as config
+    with pytest.raises(TypeError):
+        config.MountConfig.deserialize({'servers_path': '../servers'})
+    stats = config.SlotStats.deserialize({'total_use_time': 999, 'total_player_time': 999, 'total_players': 999})
+    assert not any(key.startswith('total_') for key in stats.serialize())
+    assert stats.use_time_ns_v2 == 0 and stats.player_time_ns_v2 == 0

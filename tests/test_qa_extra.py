@@ -67,7 +67,7 @@ def test_legal_space_path_ending_confirm_is_exact(environment):
     (target / MOUNTABLE_CONFIG).write_bytes((original / MOUNTABLE_CONFIG).read_bytes())
     m._config.available_servers.append(str(target))
     source = CommandUser()
-    command_root(m).execute(source, '!!mount ' + str(target))
+    command_root(m).execute(source, '!!mount switch ' + str(target))
     # The operations layer replaces legacy pending mounts with frozen votes.
     # Preserve QA-L01's exact-target assertion at that new public boundary.
     assert m.vote is not None and m.vote.target == str(target), source.replies
