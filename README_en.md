@@ -13,13 +13,13 @@
 
 1. Deploy a MCDR instance(with MC server), and start it with this plugin
 
-2. Edit the main config according to (Config)[## Config], then reload this plugin(by command `!!mount -r` or other command provided by MCDR)
+2. Edit the main config according to [Config](#config), then reload this plugin(by command `!!mount --reload` or other command provided by MCDR)
 
-3. Edit the file of `overwrite_name` which is configed at setp 2, Recommand to set up server port and rcon to get a consistent experience 
+3. Edit the file of `overwrite_path` which is configed at setp 2, Recommand to set up server port and rcon to get a consistent experience
 
-4. Add more MC server into the `servers_path` at step 2, then you can use `!!mount -l` to see them and edit their config according to (Config)[## Config], finally make sure set `checked` to true
+4. Add more MC server into the `servers_path` at step 2, then you can use `!!mount list` to see them and edit their config according to [Config](#config), finally make sure set `checked` to true
 
-5. Type `!!mount -l` now, you can see available servers now, and then mount it
+5. Type `!!mount list` now, you can see available servers now, and then mount it
 
 6. For more command, type `!!mount` in game to get help
 
@@ -69,7 +69,7 @@
   // reset method, full for reset all, region for keep up player data(e.g. Parkour record)
   "reset_type": "full",
   // mcdr plugin dir for this server, '' and '.' means empty
-  "plugin_dir": ""，
+  "plugin_dir": "",
   "stats": {
     // Stats for this server, will generate automaticaly
   }
@@ -79,3 +79,8 @@
 - add file with name `.mount-ignore` under folder in auto-detect folder to not detect that folder
 - by editing config file, you can add any server in any folder as mountable server
 - the actual config file must be json format, so remove the comments starting with `//` from above config sample
+## Voting, force and backup
+
+For version2.0.0 create configuration in the format above; `servers_path` must be an array of strings. Use `!!mount switch <full path or token>`, `reset`, `vote <id> yes|no`, `status [id]` and authorized `cancel <id>`. Paths containing spaces or a trailing ` --confirm` are resolved as complete targets.
+
+Authorized `force switch/reset` requires personal `force confirm <id>`. Authorized `backup` executes directly, stops a running server before copying and verifying worlds, then restores its previous running state. See [operations](docs/operations.md) for configuration, full/region scope, permissions and failure handling.

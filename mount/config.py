@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 from mcdreforged.api.rtext import *
 from mcdreforged.api.utils import Serializable
@@ -9,8 +9,8 @@ from .utils import debug, psi, rtr, setDebugNoCheck
 
 class MountConfig(Serializable):
     welcome_player: bool = True
-    short_prefix = True  # let !!m to be a short command
-    servers_path: Union[str, List[str]] = [ "../servers" ]
+    short_prefix: bool = True  # let !!m to be a short command
+    servers_path: List[str] = [ "../servers" ]
     overwrite_path: str = "../servers/server.properties.overwrite"
 
     # available mc servers for this MCDR instance, should be same with the dirname of that server
@@ -21,14 +21,35 @@ class MountConfig(Serializable):
     mount_name: str = "MountDemo"
     list_size: int = 15
     debug: bool = False
+    switch_ratio: float = 0.6
+    reset_ratio: float = 1.0
+    vote_timeout: int = 60
+    vote_cooldown: int = 60
+    force_timeout: int = 60
+    backup_permission: int = 3
+    cancel_permission: int = 3
+    force_players: List[str] = []
+    force_console: bool = False
+    backup_root: str = '../mount-backups'
+    backup_worlds: List[str] = ['world', 'world_nether', 'world_the_end']
+    stop_timeout: int = 60
+    start_timeout: int = 120
 
-    def migrate(self):
-        need_save = False
-        if isinstance(self.servers_path, str):
-            need_save = True
-            self.servers_path = [self.servers_path]
-        if need_save:
-            self.save()
+    def validate(self):
+        for key in ('switch_ratio', 'reset_ratio'):
+            value = getattr(self, key)
+            if isinstance(value, bool) or not 0 < value <= 1:
+                raise ValueError(key)
+        for key in ('vote_timeout', 'force_timeout', 'stop_timeout', 'start_timeout'):
+            if type(getattr(self, key)) is not int or getattr(self, key) <= 0:
+                raise ValueError(key)
+        if type(self.vote_cooldown) is not int or self.vote_cooldown < 0:
+            raise ValueError('invalid vote cooldown')
+        for key in ('backup_permission', 'cancel_permission'):
+            if type(getattr(self, key)) is not int or not 0 <= getattr(self, key) <= 4:
+                raise ValueError(key)
+        if type(self.list_size) is not int or self.list_size <= 0:
+            self.list_size = 15
 
     def save(self):
         debug(f'Saving plugin config...')
@@ -39,7 +60,9 @@ class MountConfig(Serializable):
     def load() -> 'MountConfig':
         config = psi.load_config_simple(file_name=CONFIG_NAME, target_class=MountConfig, in_data_folder=False)
         setDebugNoCheck(config.debug)
-        config.migrate()
+        if not isinstance(config.servers_path, list) or not all(isinstance(path, str) for path in config.servers_path):
+            raise ValueError('servers_path must be a list of paths')
+        config.validate()
         return config
 
 
@@ -72,7 +95,7 @@ class SlotConfig(Serializable):
     stats: SlotStats = SlotStats()
 
     def display(self, server_path: str):
-        conf_list = self.get_field_annotations()
+        conf_list = self.serialize()
 
         def get_config_text(config_key: str):
             config_value = self.__getattribute__(config_key)
