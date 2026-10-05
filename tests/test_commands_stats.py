@@ -108,3 +108,13 @@ def test_current_config_rejects_string_path_and_drops_audit_fields(environment, 
     stats = config.SlotStats.deserialize({'total_use_time': 999, 'total_player_time': 999, 'total_players': 999})
     assert not any(key.startswith('total_') for key in stats.serialize())
     assert stats.use_time_ns_v2 == 0 and stats.player_time_ns_v2 == 0
+
+
+@pytest.mark.parametrize('entry', ['--confirm', '--abort', '--reset', '-rs', 'target'])
+def test_removed_operation_adapters_cannot_create_or_confirm_vote(environment, entry):
+    from mcdreforged.api.command import UnknownArgument
+    m, server, _ = environment
+    value = m.servers_as_list[1] if entry == 'target' else entry
+    with pytest.raises(UnknownArgument):
+        command_root(m).execute(CommandUser(), '!!mount ' + value)
+    assert m.vote is None and server.stops == 0
