@@ -86,3 +86,10 @@
 `pinned_servers` takes precedence. `list_order` defaults to `configured`; optional `activity` ranks newly accumulated trusted player time. Ties are stable and ordering precedes pagination. Unavailable servers show reasons. Legacy suspect totals stay for audit only. Runtime player deduplication does not claim a complete roster when loaded midway. Public actions use private tokens, duplicate names use numbers, and complete paths may contain spaces. Existing switch/reset requests, confirmation and cancellation keep their behavior.
 
 See [migration](docs/migration.md) and [verification boundaries](docs/verification.md). Client rendering/clicking, authenticated players and production remain unverified.
+## List and statistics
+
+`pinned_servers` takes priority. `list_order` accepts `configured` or `activity`; trusted player time determines activity order, ties stay stable and sorting precedes pagination. Unavailable targets show their status and reason. Monotonic counters accumulate observed events; player deduplication lasts only for the running session.
+
+Use `!!mount --list [page]`, `!!mount <full path or token>`, `!!mount --reset`, `!!mount --confirm` and `!!mount --abort`. Exact configured targets take precedence over the trailing ` --confirm` parameter. Public buttons use tokens and duplicate names use numbered labels without exposing absolute paths.
+
+For version1.0.0 create configuration in the format above. `servers_path` must be an array of strings. Generated statistics use `schema_version: 2`, nanosecond `use_time_ns_v2`/`player_time_ns_v2` counters and the `last_mount_ns` anchor; no permanent player list is stored.

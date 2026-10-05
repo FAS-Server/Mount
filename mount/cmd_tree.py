@@ -53,9 +53,9 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
         return Text('slot_path').requires(lambda src, ctx: ctx['slot_path'] in manager.servers_as_list,
                                           lambda src, ctx: rtr('error.invalid_mount_path'))
 
-    def legacy_mount(src, target):
+    def request_target(src, target):
         suffix = ' --confirm'
-        # A configured complete path may itself end in the legacy flag.
+        # A configured complete path may itself end in the confirmation suffix.
         # Resolve the exact input before treating any suffix as syntax.
         exact = manager.resolve_target(target)
         confirmed = exact not in manager.servers_as_list and target.endswith(suffix)
@@ -98,7 +98,7 @@ def register_commands(server: PluginServerInterface, manager: MountManager):
     ).then(
         Literal({'--reload', '-r'}).runs(lambda src, ctx: manager.reload(src))
     ).then(
-        GreedyText('mount_target').runs(lambda src, ctx: legacy_mount(src, ctx['mount_target']))
+        GreedyText('mount_target').runs(lambda src, ctx: request_target(src, ctx['mount_target']))
     )
     server.register_command(main_node)
     server.register_help_message(COMMAND_PREFIX, rtr("help_msg.brief"))

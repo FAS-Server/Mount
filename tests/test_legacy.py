@@ -6,7 +6,7 @@ import pytest
 from command_api import CommandUser, command_root
 
 
-def test_old_commands_request_confirm_cancel(environment, monkeypatch):
+def test_request_commands_request_confirm_cancel(environment, monkeypatch):
     import mount.MountManager as mm
     m, server, Source = environment
     root = command_root(m)
@@ -76,10 +76,10 @@ def test_real_list_text_and_buttons(environment, monkeypatch, language):
     print(language, rendered)
 
 
-def test_old_config_empty_and_bad_size(environment):
+def test_defaults_empty_and_bad_size(environment):
     from mount.config import MountConfig
     m, _, Source = environment
-    old = MountConfig.deserialize({'current_server': m.current_slot.path, 'servers_path': '../servers'})
+    old = MountConfig.deserialize({'current_server': m.current_slot.path, 'servers_path': ['../servers']})
     assert old.pinned_servers == [] and old.list_order == 'configured'
     assert not hasattr(old, 'backup_permission')
     m._config.available_servers = []
@@ -120,3 +120,16 @@ def test_confirm_suffix_prefers_exact_configured_target(environment, input_kind)
     src = CommandUser()
     command_root(m).execute(src, '!!mount '+value)
     assert m.next_slot is not None and m.next_slot.path == str(target)
+
+
+def test_current_config_rejects_string_path_and_drops_audit_fields(environment, monkeypatch):
+    import mount.config as config
+    m, server, _ = environment
+    monkeypatch.setattr(config, 'setDebugNoCheck', lambda value: None)
+    monkeypatch.setattr(config.psi, 'load_config_simple', lambda **kwargs:
+        config.MountConfig.deserialize({'servers_path': '../servers'}))
+    with pytest.raises(ValueError, match='servers_path'):
+        config.MountConfig.load()
+    stats = config.SlotStats.deserialize({'total_use_time': 999, 'total_player_time': 999, 'total_players': 999})
+    assert not any(key.startswith('total_') for key in stats.serialize())
+    assert stats.use_time_ns_v2 == 0 and stats.player_time_ns_v2 == 0
