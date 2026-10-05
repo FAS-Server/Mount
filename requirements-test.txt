@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=7
+# MCDR 2.7 imports pkg_resources.
+setuptools<81
