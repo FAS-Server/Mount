@@ -1,4 +1,5 @@
 import functools
+import hashlib
 import math
 import os.path
 import time
@@ -15,6 +16,7 @@ from .config import MountConfig, SlotConfig
 from .constants import *
 from .detect_helper import DetectHelper
 from .MountSlot import MountSlot
+from .list_order import order_slots
 from .reset_helper import ResetHelper
 from .utils import logger, psi, rtr, debug
 
@@ -182,6 +184,7 @@ class MountManager:
     @single_op(Operation.REQUEST_MOUNT)
     def request_mount(self, source: CommandSource, path: str, with_confirm: bool = False):
         global current_op
+        path = self.resolve_target(path)
         debug("Received mount request, evaluating...")
 
         if path == self.current_slot.path:
@@ -299,57 +302,78 @@ class MountManager:
             self.next_slot.release(self._config.mount_name)
         self.next_slot = None
 
-    @new_thread('mount-list')
-    def list_servers(self, src: CommandSource, page: int = 1):
-        debug(f"Received list request for page {page}")
-        list_size = self._config.list_size
-        available_servers = self._config.available_servers
-        max_page = math.ceil(len(available_servers) / list_size)
-        if not 1 <= page <= max_page:
+    def message(self, src, key, **kwargs):
+        src.reply(rtr('flow.' + key, **kwargs))
+    def button(self, key, command):
+        return RText(rtr('flow.' + key)).c(RAction.run_command, COMMAND_PREFIX + ' ' + command)
+    def target_token(self, path):
+        return 'slot:' + hashlib.sha256(path.encode('utf-8')).hexdigest()
+    def resolve_target(self, target):
+        if target.startswith('slot:'):
+            return next((path for path in self.servers_as_list if self.target_token(path) == target), '')
+        return target
+    def target_name(self, path):
+        name = os.path.basename(os.path.normpath(path))
+        matches = [p for p in self.servers_as_list if os.path.basename(os.path.normpath(p)) == name]
+        return name + (' #'+str(matches.index(path)+1) if len(matches) > 1 and path in matches else '')
+
+    def list_servers(self, src, page=1):
+        views, slots, reasons = [], {}, {}
+        degraded = False
+        for path in self.servers_as_list:
+            try:
+                if not os.path.isdir(path):
+                    raise ValueError('missing path')
+                slot = MountSlot(path)
+                score = slot.stats.player_time_ns_v2
+                if slot.stats.schema_version != 2 or type(score) not in (int, float) or not math.isfinite(score) or score < 0:
+                    score, degraded = 0, True
+                views.append((path, max(0, score)))
+                slots[path] = slot
+            except Exception:
+                reasons[path] = 'missing' if not os.path.isdir(path) else 'invalid'
+                degraded = True
+                views.append((path, 0))
+        views = order_slots(views, self._config.pinned_servers,
+                            'configured' if degraded else self._config.list_order)
+        size = self._config.list_size
+        if type(size) is not int or size <= 0:
+            size = 15
+        pages = max(1, math.ceil(len(views)/size))
+        try:
+            page = int(page)
+        except (ValueError, TypeError):
+            page = 0
+        if not 1 <= page <= pages:
             page = 1
-        
-        left = (page - 1) * list_size
-        right = min(len(available_servers), page * list_size)
-        src.reply(RText(rtr('list.title')))
-        for server in available_servers[left: right]:
-            slot = MountSlot(path=server)
-            src.reply(
-                slot
-                    .get_config()
-                    .as_list_entry(slot.name, slot.path,
-                        self._config.mount_name, self._config.current_server
-                ))
-            
-        # <<<   curr/total   >>>
-        link_color = {
-            True: RColor.green,
-            False: RColor.gray
-        }
-
-        left_link: RText
-        if page <= 1:
-            left_link = RText('<<<', color=link_color[False]).h(rtr('list.no_more_page'))
-        else:
-            left_link = RText('<<<', color=link_color[True]).h(rtr('list.prev_page')) \
-                .c(RAction.suggest_command, COMMAND_PREFIX + ' --list ' + str(page - 1))
-
-        right_link: RText
-        if page >= max_page:
-            right_link = RText('>>>', color=link_color[False]).h(rtr('list.no_more_page'))
-        else:
-            right_link = RText('>>>', color=link_color[True]).h(rtr('list.next_page')) \
-                .c(RAction.suggest_command, COMMAND_PREFIX + ' --list ' + str(page + 1))
-
-        footer = RTextList(
-            left_link,
-            f'   {page} / {max_page}   ',
-            right_link
-        )
-        if left == right:
+            self.message(src, 'page_corrected')
+        src.reply(rtr('list.title'))
+        if degraded and self._config.list_order == 'activity':
+            self.message(src, 'activity_fallback')
+        for path, _ in views[(page-1)*size:page*size]:
+            slot, current = slots.get(path), path == self.current_slot.path
+            row = RTextList(self.target_name(path), ' ')
+            if path in self._config.pinned_servers:
+                row.append(rtr('flow.pinned'), ' ')
+            if current:
+                row.append(rtr('flow.current'), ' ')
+            if slot:
+                row.append(slot.desc, ' ')
+                reason = ('unchecked' if not slot.checked else 'occupied'
+                          if slot.occupied_by and (not current or slot.occupied_by != self._config.mount_name)
+                          else 'available')
+                row.append(rtr('flow.'+reason), ' ')
+                if current and slot.reset_path and reason == 'available':
+                    row.append(self.button('reset', '--reset'))
+                elif not current and reason == 'available':
+                    row.append(self.button('switch', self.target_token(path)))
+            else:
+                row.append(rtr('flow.'+reasons[path]))
+            src.reply(row)
+        if not views:
             src.reply(rtr('list.empty'))
-        else:
-            src.reply(footer)
-        
+        src.reply(RTextList(self.button('previous', '--list '+str(page-1)) if page > 1 else rtr('flow.previous'),
+            ' {}/{} '.format(page,pages), self.button('next', '--list '+str(page+1)) if page < pages else rtr('flow.next')))
 
     def get_config(self, config_key, src: Optional[CommandSource] = None):
         if src is not None:

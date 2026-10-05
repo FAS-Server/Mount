@@ -13,11 +13,11 @@
 
 1. Deploy a MCDR instance(with MC server), and start it with this plugin
 
-2. Edit the main config according to (Config)[## Config], then reload this plugin(by command `!!mount -r` or other command provided by MCDR)
+2. Edit the main config according to [Config](#config), then reload this plugin(by command `!!mount -r` or other command provided by MCDR)
 
-3. Edit the file of `overwrite_name` which is configed at setp 2, Recommand to set up server port and rcon to get a consistent experience 
+3. Edit the file of `overwrite_path` which is configed at setp 2, Recommand to set up server port and rcon to get a consistent experience
 
-4. Add more MC server into the `servers_path` at step 2, then you can use `!!mount -l` to see them and edit their config according to (Config)[## Config], finally make sure set `checked` to true
+4. Add more MC server into the `servers_path` at step 2, then you can use `!!mount -l` to see them and edit their config according to [Config](#config), finally make sure set `checked` to true
 
 5. Type `!!mount -l` now, you can see available servers now, and then mount it
 
@@ -47,6 +47,8 @@
   "mount_name": "MountDemo",
   // page size of pagination
   "list_size": 15,
+  "pinned_servers": [],
+  "list_order": "configured",
   // debug mode, will print more info
   "debug": false
 }
@@ -69,7 +71,7 @@
   // reset method, full for reset all, region for keep up player data(e.g. Parkour record)
   "reset_type": "full",
   // mcdr plugin dir for this server, '' and '.' means empty
-  "plugin_dir": ""，
+  "plugin_dir": "",
   "stats": {
     // Stats for this server, will generate automaticaly
   }
@@ -79,3 +81,10 @@
 - add file with name `.mount-ignore` under folder in auto-detect folder to not detect that folder
 - by editing config file, you can add any server in any folder as mountable server
 - the actual config file must be json format, so remove the comments starting with `//` from above config sample
+## List and statistics
+
+`pinned_servers` takes priority. `list_order` accepts `configured` or `activity`; trusted player time determines activity order, ties stay stable and sorting precedes pagination. Unavailable targets show their status and reason. Monotonic counters accumulate observed events; player deduplication lasts only for the running session.
+
+Use `!!mount --list [page]`, `!!mount <full path or token>`, `!!mount --reset`, `!!mount --confirm` and `!!mount --abort`. Exact configured targets take precedence over the trailing ` --confirm` parameter. Public buttons use tokens and duplicate names use numbered labels without exposing absolute paths.
+
+For version1.0.0 create configuration in the format above. `servers_path` must be an array of strings. Generated statistics use `schema_version: 2`, nanosecond `use_time_ns_v2`/`player_time_ns_v2` counters and the `last_mount_ns` anchor; no permanent player list is stored.
